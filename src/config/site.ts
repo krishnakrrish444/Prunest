@@ -5,6 +5,7 @@ const env = import.meta.env;
 const clean = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined);
 
 const adsenseClient = clean(env.PUBLIC_ADSENSE_CLIENT);
+const googleAnalyticsId = clean(env.PUBLIC_GOOGLE_ANALYTICS_ID);
 
 export const site = {
   name: 'Prunest',
@@ -24,6 +25,7 @@ export const site = {
     return v && /^https:\/\//.test(v) ? v : undefined;
   })(),
   cfAnalyticsToken: clean(env.PUBLIC_CF_ANALYTICS_TOKEN),
+  googleAnalyticsId: googleAnalyticsId && /^G-[A-Z0-9]+$/.test(googleAnalyticsId) ? googleAnalyticsId : undefined,
 };
 
 export type AdPlacement = 'below-tool' | 'in-content';
