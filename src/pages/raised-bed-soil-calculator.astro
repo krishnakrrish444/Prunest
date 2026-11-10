@@ -1,0 +1,73 @@
+---
+import ToolLayout from '../layouts/ToolLayout.astro';
+---
+<ToolLayout
+  tool="soil"
+  intro="Enter the inside size of each bed and the depth of soil you want to add. You get the volume in cubic feet, cubic yards, litres and cubic metres, plus whole bags and cost if you add a bag size or price."
+  related={[
+    { id: 'spacing', why: 'once the bed is filled, see how many plants fit at the spacing on your seed packet.' },
+    { id: 'mulch', why: 'work out a top layer of mulch for the same beds or the paths between them.' },
+    { id: 'seed', why: 'turn seed packet timings into sowing dates for what you plan to grow.' },
+  ]}
+>
+  <h2>How to measure a raised bed</h2>
+  <ol>
+    <li><strong>Measure inside the walls.</strong> Soil only fills the space between the boards, so measure the inside length and width. Thick timber or blocks can take several inches off the outside size.</li>
+    <li><strong>For a round bed, measure the inside diameter</strong> straight across the middle, at the widest point.</li>
+    <li><strong>Decide the depth of soil to add.</strong> This is not always the wall height. Most people stop a little below the rim so water and mulch stay in the bed.</li>
+    <li><strong>Topping up?</strong> Measure from the current soil surface up to where you want the new surface, and enter only that depth.</li>
+  </ol>
+
+  <h3>Bed height and fill depth are different things</h3>
+  <p>
+    The wall height tells you how deep the bed could be filled. The fill depth is how much soil you are actually adding. A 12 inch (30 cm) bed filled to 2 inches below the rim needs 10 inches of soil, about 17% less than filling it to the brim. The calculator only ever uses the depth you enter. The optional wall height is there to flag a depth that is taller than the walls and to draw the side view.
+  </p>
+
+  <h2>Using the results</h2>
+  <h3>Base volume and allowance</h3>
+  <p>
+    The base volume is the exact space you described. Loose soil and compost settle once watered, so some gardeners order a little extra. If you want that, enter an allowance as a percentage and it is shown as a separate line, so you can always see what the bed holds and what you added on top. No allowance is applied unless you enter one.
+  </p>
+  <h3>Bags bought together or per bed</h3>
+  <p>
+    With more than one bed there are two honest ways to count bags. <strong>Bought together</strong> adds all the beds first and rounds up once, which is what you need if you are happy to split a bag between beds. <strong>Rounded per bed</strong> rounds each bed up on its own, which suits beds filled at different times or with different mixes. The second number can never be lower than the first.
+  </p>
+  <h3>Bulk soil</h3>
+  <p>
+    Bulk soil is usually sold by the cubic yard in the US and by the cubic metre (or bulk bag) elsewhere. The bulk estimate prices the exact volume. Suppliers round to their own delivery sizes, so treat it as a starting point for a quote.
+  </p>
+
+  <Fragment slot="more">
+    <h2>Worked example</h2>
+    <div class="worked">
+      <p><strong>Two beds, filled with 1.5 cu ft bags, 10% extra for settling.</strong></p>
+      <ul>
+        <li>Bed 1 is 8 ft × 4 ft inside, with 10 in of soil to add. 10 in is 10 ÷ 12 = 0.8333 ft, so 8 × 4 × 0.8333 = <strong>26.67 cu ft</strong>.</li>
+        <li>Bed 2 is round, 4 ft across, with 12 in (1 ft) of soil. Radius is 2 ft, so π × 2² × 1 = <strong>12.57 cu ft</strong>.</li>
+        <li>Base volume: 26.67 + 12.57 = <strong>39.23 cu ft</strong>.</li>
+        <li>10% allowance: 3.92 cu ft, giving <strong>43.16 cu ft</strong> in total. That is 43.16 ÷ 27 = 1.598 cu yd, or about 1,222 litres (1.222 m³).</li>
+        <li>Bags bought together: 43.16 ÷ 1.5 = 28.77, so <strong>29 bags</strong>.</li>
+        <li>Rounded per bed: Bed 1 needs 29.33 ÷ 1.5 = 19.56, so 20 bags. Bed 2 needs 13.82 ÷ 1.5 = 9.22, so 10 bags. That is <strong>30 bags</strong>, one more than buying together.</li>
+      </ul>
+      <p>Press “Try an example” with imperial units selected to load these numbers. This example is also one of the automated checks the calculator has to pass before each release.</p>
+    </div>
+
+    <h2>What this calculator does not do</h2>
+    <ul>
+      <li><strong>No weight.</strong> A cubic foot of soil can weigh very different amounts depending on the mix and how wet it is. Volume is never converted to weight here. If you need weight for transport, ask the supplier for the density of the specific product.</li>
+      <li><strong>No recommended mix or depth.</strong> How deep to fill, and with what, depends on what you grow and what is under the bed. Those choices are yours.</li>
+      <li><strong>Straight sides only.</strong> Beds with sloping sides, a base layer of logs or rubble, or an uneven floor will hold a different amount. Measure the depth of soil you are really adding.</li>
+      <li><strong>Bag sizes vary.</strong> Some bags state a compressed volume or are sold by weight or dry quarts. Use the loose volume on the bag, in cubic feet or litres.</li>
+    </ul>
+
+    <h2>Unit reference</h2>
+    <ul>
+      <li>1 cubic yard = 27 cubic feet = 764.6 litres</li>
+      <li>1 cubic metre = 1,000 litres = 35.31 cubic feet = 1.308 cubic yards</li>
+      <li>1 cubic foot = 28.32 litres</li>
+    </ul>
+  </Fragment>
+</ToolLayout>
+<script>
+  import '../tools/soil';
+</script>

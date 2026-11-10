@@ -1,0 +1,12 @@
+---
+// Original Prunest mark: a seedling growing from a raised bed.
+interface Props { size?: number }
+const { size = 32 } = Astro.props;
+---
+<svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+  <path d="M16 20v-8" stroke="#36593f" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+  <path d="M16 13.5c0-4.2 3-6.8 7.6-6.8 0 4.2-3 6.8-7.6 6.800z" fill="#6f9a6a"/>
+  <path d="M16 16c0-3.2-2.4-5.300-6.200-5.300 0 3.200 2.400 5.300 6.200 5.300z" fill="#36593f"/>
+  <rect x="5" y="19.500" width="22" height="7.500" rx="2" fill="#7a5a3c"/>
+  <rect x="5" y="19.500" width="22" height="2.600" rx="1.300" fill="#5e442c"/>
+</svg>

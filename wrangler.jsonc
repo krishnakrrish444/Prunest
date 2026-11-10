@@ -1,0 +1,14 @@
+{
+  // Cloudflare Workers Static Assets: assets only, no Worker script ("main" is
+  // intentionally absent), so no server code runs for any request.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "prunest",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    // /foo.html is served at /foo; real multipage URLs, no SPA fallback.
+    "html_handling": "auto-trailing-slash",
+    // Unknown paths return dist/404.html with a real 404 status.
+    "not_found_handling": "404-page"
+  }
+}

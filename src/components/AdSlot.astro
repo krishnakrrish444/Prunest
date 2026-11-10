@@ -1,0 +1,20 @@
+---
+// Optional ad placement. Renders nothing at all unless a real ad
+// configuration was supplied at build time (see src/config/site.ts).
+import { site, type AdPlacement } from '../config/site';
+interface Props { placement: AdPlacement }
+const { placement } = Astro.props;
+const adsenseSlot = site.adsenseClient ? site.adsenseSlots[placement] : undefined;
+const show = Boolean(adsenseSlot || site.adsPortalScript);
+---
+{show && (
+  <aside class="ad-slot no-print" aria-label="Advertisement">
+    <p class="ad-label">Advertisement</p>
+    {adsenseSlot ? (
+      <ins class="adsbygoogle" style="display:block" data-ad-client={site.adsenseClient} data-ad-slot={adsenseSlot} data-ad-format="auto" data-full-width-responsive="true"></ins>
+      <script is:inline>(window.adsbygoogle = window.adsbygoogle || []).push({});</script>
+    ) : (
+      <div data-ad-placement={placement}></div>
+    )}
+  </aside>
+)}

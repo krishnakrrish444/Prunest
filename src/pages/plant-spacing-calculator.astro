@@ -1,0 +1,75 @@
+---
+import ToolLayout from '../layouts/ToolLayout.astro';
+---
+<ToolLayout
+  tool="spacing"
+  intro="Enter the bed size and the spacing from your seed packet or plant label. You get the number of rows, plants per row, a top-down plan drawn in proportion, and the measurements for marking it out."
+  related={[
+    { id: 'soil', why: 'work out how much soil the same bed needs.' },
+    { id: 'seed', why: 'turn the packet’s sowing times into dates for the plants you have just laid out.' },
+    { id: 'mulch', why: 'estimate mulch for the bed once it is planted.' },
+  ]}
+>
+  <h2>How the layout is worked out</h2>
+  <p>Everything here follows one simple, stated model, so you can check it with a tape measure.</p>
+  <ul>
+    <li><strong>Spacing is centre to centre.</strong> The distance is from the middle of one plant to the middle of the next, which is how seed packets and plant labels give it.</li>
+    <li><strong>Edge clearance comes off both ends.</strong> The usable run along each side is the bed dimension minus the clearance twice.</li>
+    <li><strong>The first plant sits at the start of the usable run.</strong> With a clearance of 6 in, the first centre is exactly 6 in from the edge. With no clearance, the first centre is on the edge line itself.</li>
+    <li><strong>One more position fits for every full spacing step.</strong> If the usable run is 84 in and plants are 12 in apart, that is 7 steps and so 8 plants.</li>
+    <li><strong>Rows work the same way</strong> across the other side of the bed, using the row spacing.</li>
+  </ul>
+  <p>
+    Positions are counted along each side separately. The calculator never divides the bed area by an “area per plant”, because that overcounts in beds whose sides are not a neat multiple of the spacing.
+  </p>
+
+  <h3>Choosing an edge clearance</h3>
+  <p>
+    A plant whose centre is on the edge of a bed has half its space outside it. Many gardeners therefore keep the outer plants about half a spacing in from the edge. That is a layout convention, not a rule: enter whatever suits your bed, or leave it blank for none.
+  </p>
+
+  <h3>Leftover space</h3>
+  <p>
+    When the usable run is not an exact multiple of the spacing, some space is left. By default it stays at the far end. Tick “Centre the layout” to share it equally between both ends. The number of plants is the same either way.
+  </p>
+
+  <h2>Row direction</h2>
+  <p>
+    Rows can run along the length of the bed or across its width. Because in-row spacing and row spacing usually differ, the two directions often hold different numbers of plants. The results always show the count for the other direction, with a button to switch.
+  </p>
+
+  <h2>Marking out the bed</h2>
+  <ol>
+    <li>Use the “Measurements for marking out” table. Mark the row centres along one side of the bed, measuring from one edge.</li>
+    <li>Run a string line for each row.</li>
+    <li>Along each string, mark the plant centres, measuring from the same end each time.</li>
+  </ol>
+  <p>
+    The plan is drawn in proportion to your measurements, but a printout is not true to scale. Always work from the written measurements.
+  </p>
+
+  <Fragment slot="more">
+    <h2>Worked example</h2>
+    <div class="worked">
+      <p><strong>An 8 ft × 4 ft bed. The packet says 12 in between plants and 18 in between rows. Edge clearance 6 in.</strong></p>
+      <ul>
+        <li>Rows along the length: the usable length is 96 − 2 × 6 = 84 in. 84 ÷ 12 = 7 steps, so <strong>8 plants per row</strong>, at 6, 18, 30 … 90 in from one end.</li>
+        <li>The usable width is 48 − 2 × 6 = 36 in. 36 ÷ 18 = 2 steps, so <strong>3 rows</strong>, at 6, 24 and 42 in from one long side.</li>
+        <li>Total: 3 × 8 = <strong>24 positions</strong>.</li>
+        <li>Rows across the width instead: 36 ÷ 12 = 3 steps gives 4 plants per row, and 84 ÷ 18 = 4.67 gives 4 full steps, so 5 rows. That is <strong>20 positions</strong>, with 12 in of length left over.</li>
+      </ul>
+      <p>Press “Try an example” with imperial units selected to load these numbers. The spacings are only an illustration; use the figures for your own plants.</p>
+    </div>
+
+    <h2>What this calculator does not do</h2>
+    <ul>
+      <li><strong>It does not know any plant’s spacing.</strong> Prunest has no plant database. Spacing must come from your seed packet, plant label or supplier.</li>
+      <li><strong>Regular rows only.</strong> Staggered (offset) rows and beds with several different plants are not covered yet.</li>
+      <li><strong>Rectangular beds only.</strong> For an L-shaped bed, lay out each rectangle separately.</li>
+      <li><strong>Positions, not advice.</strong> The count is how many centres fit the geometry. Whether to fill every position is your call.</li>
+    </ul>
+  </Fragment>
+</ToolLayout>
+<script>
+  import '../tools/spacing';
+</script>

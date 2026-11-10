@@ -1,0 +1,12 @@
+---
+import Page from '../layouts/Page.astro';
+import { tools } from '../config/site';
+---
+<Page title="Page not found — Prunest" description="This page does not exist. Find Prunest’s garden calculators here." path="/404" heading="Page not found" noindex>
+  <p>There is nothing at this address. It may have been mistyped, or the page may have moved.</p>
+  <h2>Calculators</h2>
+  <ul>
+    {tools.map((t) => <li><a href={t.path}>{t.name}</a></li>)}
+  </ul>
+  <p><a href="/" class="btn btn-primary">Go to the homepage</a></p>
+</Page>

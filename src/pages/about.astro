@@ -1,0 +1,28 @@
+---
+import Page from '../layouts/Page.astro';
+import { site, tools } from '../config/site';
+---
+<Page title="About Prunest" description="What Prunest is, how its free garden calculators work, and how their results are checked." path="/about" heading="About Prunest">
+  <p>Prunest is a small set of free garden calculators and planning tools. The idea is simple: measure your garden, then plan what to buy and when to plant.</p>
+  {site.businessName && <p>Prunest is run by {site.businessName}.</p>}
+
+  <h2>What is here</h2>
+  <ul>
+    {tools.map((t) => <li><a href={t.path}>{t.name}</a>: {t.blurb}</li>)}
+  </ul>
+
+  <h2>How the tools are built</h2>
+  <ul>
+    <li><strong>Your inputs only.</strong> The tools use the measurements, product sizes, prices and dates you enter. There is no plant database, no price data and no weather or frost-date lookup.</li>
+    <li><strong>No silent defaults.</strong> If an entry is missing or not valid, the tool says so and waits. It does not substitute a number for you.</li>
+    <li><strong>Full precision.</strong> Measurements are converted using exact definitions (1 foot = 0.3048 m) and carried at full precision. Numbers are rounded only when shown, and bag or bulk quantities are rounded up only at the point of purchase.</li>
+    <li><strong>Checked arithmetic.</strong> Each calculator has automated tests against examples worked out by hand, including mixed units, exact-fit rounding, leap days and year ends. The worked example on each page is one of those tests.</li>
+    <li><strong>In your browser.</strong> The calculations run on your device. See the <a href="/privacy">privacy page</a> for exactly what is and is not stored.</li>
+  </ul>
+
+  <h2>Limits</h2>
+  <p>The results are estimates based on simple shapes and the figures you provide. Real beds settle, ground is uneven and products vary. Each tool lists its assumptions, and you should check measurements before buying. Prunest does not give horticultural advice for particular plants or regions.</p>
+
+  <h2>How it is paid for</h2>
+  <p>The tools are free. The site may show advertising to cover its costs. Where adverts appear they are labelled, and they are kept away from the calculator inputs, results and printed plans.</p>
+</Page>

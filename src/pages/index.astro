@@ -1,0 +1,47 @@
+---
+import Base from '../layouts/Base.astro';
+import { site, tools } from '../config/site';
+const jsonLd = { '@context': 'https://schema.org', '@type': 'WebSite', name: site.name, url: site.url + '/', description: site.tagline };
+const icons: Record<string, string> = {
+  soil: '<rect x="4" y="16" width="32" height="16" rx="2" fill="#7a5a3c"/><rect x="4" y="16" width="32" height="5" rx="2" fill="#5e442c"/><path d="M20 16V8" stroke="#36593f" stroke-width="2.500" stroke-linecap="round"/><path d="M20 10c0-4 3-6 7-6 0 4-3 6-7 6z" fill="#6f9a6a"/>',
+  mulch: '<path d="M4 30c5-9 9-12 16-12s11 3 16 12z" fill="#a9824f"/><circle cx="14" cy="26" r="1.500" fill="#5e442c"/><circle cx="21" cy="23" r="1.500" fill="#5e442c"/><circle cx="27" cy="27" r="1.500" fill="#5e442c"/><path d="M4 31h32" stroke="#1e2a22" stroke-width="2" stroke-linecap="round"/>',
+  spacing: '<rect x="4" y="8" width="32" height="24" rx="2" fill="#f3ead9" stroke="#7a5a3c" stroke-width="2"/><g fill="#36593f"><circle cx="11" cy="15" r="2.200"/><circle cx="20" cy="15" r="2.200"/><circle cx="29" cy="15" r="2.200"/><circle cx="11" cy="25" r="2.200"/><circle cx="20" cy="25" r="2.200"/><circle cx="29" cy="25" r="2.200"/></g>',
+  seed: '<rect x="5" y="8" width="30" height="26" rx="3" fill="#fffdf8" stroke="#36593f" stroke-width="2"/><rect x="5" y="8" width="30" height="7" rx="3" fill="#36593f"/><path d="M12 5v6M28 5v6" stroke="#1e2a22" stroke-width="2.500" stroke-linecap="round"/><path d="M14 25l4 4 8-9" stroke="#36593f" stroke-width="2.500" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+};
+---
+<Base title="Prunest — Free Garden Calculators & Planners" description="Free garden calculators for raised bed soil, mulch, plant spacing and seed starting dates. No login. Metric and imperial, with printable results." path="/" jsonLd={jsonLd}>
+  <div class="wrap pt-8 sm:pt-12">
+    <h1 class="max-w-3xl text-4xl leading-tight font-bold sm:text-5xl">Measure your garden. Plan what to buy and when to plant.</h1>
+    <p class="mt-4 max-w-2xl text-lg text-muted">Four free calculators for home gardeners. Enter your own measurements and dates, see how each number was worked out, and print the result. No sign-up, nothing to install.</p>
+
+    <h2 class="sr-only">Calculators</h2>
+    <ul class="mt-8 grid gap-4 sm:grid-cols-2">
+      {tools.map((t) => (
+        <li class="card relative flex gap-4 transition-colors hover:border-leaf-600">
+          <svg width="56" height="56" viewBox="0 0 40 40" aria-hidden="true" class="shrink-0" set:html={icons[t.id]} />
+          <div>
+            <h3 class="display text-xl font-bold"><a href={t.path} class="text-ink no-underline after:absolute after:inset-0 hover:underline">{t.name}</a></h3>
+            <p class="mt-1 text-muted">{t.blurb}</p>
+            <p class="mt-2 font-semibold text-leaf-700" aria-hidden="true">Open calculator →</p>
+          </div>
+        </li>
+      ))}
+    </ul>
+
+    <div class="prose">
+      <h2>How Prunest works</h2>
+      <ul>
+        <li><strong>You supply the facts.</strong> Bed sizes, bag sizes, prices, spacing and dates come from you, your seed packets and your suppliers. Prunest has no plant database, price feed or weather data, and does not guess.</li>
+        <li><strong>The working is shown.</strong> Every result comes with a step-by-step breakdown and a diagram, so you can check it before you spend money.</li>
+        <li><strong>Metric and imperial.</strong> Mix feet, inches, metres and centimetres. Switching units converts the numbers without changing the measurement.</li>
+        <li><strong>Private by design.</strong> Calculations run in your browser. Saved plans stay on your device and can be deleted with one button.</li>
+        <li><strong>Made for the garden.</strong> Large controls for use on a phone outdoors, and printouts that fit A4 and US Letter.</li>
+      </ul>
+
+      <h2>Planning a raised bed from scratch</h2>
+      <p>
+        A common order is: use the <a href="/raised-bed-soil-calculator">soil calculator</a> to see how much soil the bed takes, the <a href="/plant-spacing-calculator">plant spacing calculator</a> to see how many plants fit, the <a href="/seed-starting-calculator">seed starting calculator</a> to work out when to sow them, and the <a href="/mulch-calculator">mulch calculator</a> for the finishing layer.
+      </p>
+    </div>
+  </div>
+</Base>

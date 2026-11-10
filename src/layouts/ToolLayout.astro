@@ -1,0 +1,100 @@
+---
+import Base from './Base.astro';
+import AdSlot from '../components/AdSlot.astro';
+import { site, tools, toolById, type ToolInfo } from '../config/site';
+
+interface Props {
+  tool: ToolInfo['id'];
+  intro: string;
+  /** Hide the imperial/metric switch for tools with no measurements. */
+  units?: boolean;
+  related: { id: ToolInfo['id']; why: string }[];
+}
+const { tool, intro, units = true, related } = Astro.props;
+const info = toolById(tool);
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: info.name,
+  url: site.url + info.path,
+  description: info.description,
+  applicationCategory: 'UtilitiesApplication',
+  operatingSystem: 'Any',
+  isAccessibleForFree: true,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  publisher: { '@type': 'Organization', name: site.name, url: site.url },
+};
+---
+<Base title={info.title} description={info.description} path={info.path} jsonLd={jsonLd}>
+  <div class="wrap pt-6 sm:pt-8" data-tool={tool}>
+    <div class="print-only mb-4 border-b border-line pb-2">
+      <p class="display text-xl font-bold">Prunest</p>
+      <p class="text-sm">{info.name} · {site.url.replace('https://', '')}{info.path} · Printed <span data-print-date></span></p>
+    </div>
+    <h1 class="text-3xl font-bold sm:text-4xl">{info.name}</h1>
+    <p class="no-print mt-2 max-w-3xl text-muted">{intro}</p>
+
+    <div class="tool-layout mt-5 grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
+      <section class="card no-print min-w-0" aria-label="Calculator inputs">
+        <div class="mb-4 flex flex-wrap items-center gap-2">
+          {units && (
+            <fieldset class="segmented mr-auto">
+              <legend class="sr-only">Units for all measurements</legend>
+              <label><input type="radio" name="units" value="imperial" data-units disabled /> Imperial</label>
+              <label><input type="radio" name="units" value="metric" data-units disabled /> Metric</label>
+            </fieldset>
+          )}
+          <button type="button" class="btn btn-secondary" data-action="example" disabled>Try an example</button>
+          <button type="button" class="btn btn-quiet min-h-12" data-action="reset" disabled>Reset</button>
+        </div>
+        <form data-form novalidate>
+          <p class="notice">Loading the calculator…</p>
+        </form>
+        <noscript>
+          <p class="notice notice-warn"><strong>This calculator needs JavaScript.</strong> It runs entirely in your browser, so nothing can be worked out with scripts turned off. The measuring guide and worked example below still apply.</p>
+        </noscript>
+      </section>
+
+      <section class="card min-w-0" aria-labelledby="results-title">
+        <h2 id="results-title" class="mb-3 text-2xl font-semibold">Results</h2>
+        <div data-results aria-live="polite">
+          <p class="notice">Results appear here once you enter your measurements.</p>
+        </div>
+        <div class="no-print mt-6 flex flex-wrap gap-2 border-t border-line pt-4">
+          <button type="button" class="btn btn-primary" data-action="print" disabled>Print results</button>
+          <button type="button" class="btn btn-secondary" data-action="save" disabled>Save on this device</button>
+          <button type="button" class="btn btn-quiet min-h-12" data-action="delete" hidden>Delete saved plan</button>
+        </div>
+        <p class="no-print mt-2 text-sm font-semibold" data-status role="status"></p>
+        <p class="no-print mt-2 text-sm text-muted">
+          Saving keeps your entries in this browser’s local storage on this device only. Nothing is uploaded. “Delete saved plan” removes it. Printing also lets you save a PDF.
+        </p>
+      </section>
+    </div>
+
+    <AdSlot placement="below-tool" />
+
+    <article class="prose no-print mt-10">
+      <slot />
+      <AdSlot placement="in-content" />
+      <slot name="more" />
+      <h2>Related tools</h2>
+      <ul>
+        {related.map((r) => {
+          const t = tools.find((x) => x.id === r.id)!;
+          return <li><a href={t.path}>{t.name}</a>: {r.why}</li>;
+        })}
+      </ul>
+    </article>
+  </div>
+  <slot name="script" />
+  <script>
+    const stamp = () => {
+      document.querySelectorAll('[data-print-date]').forEach((el) => {
+        el.textContent = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+      });
+    };
+    stamp();
+    window.addEventListener('beforeprint', stamp);
+  </script>
+</Base>

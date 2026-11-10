@@ -1,0 +1,69 @@
+---
+import ToolLayout from '../layouts/ToolLayout.astro';
+---
+<ToolLayout
+  tool="seed"
+  units={false}
+  intro="Seed packets say things like “sow indoors 6–8 weeks before the last frost”. Enter your own reference date and the timings from the packet to get real calendar dates and a printable schedule."
+  related={[
+    { id: 'spacing', why: 'see how many of those seedlings will fit in the bed.' },
+    { id: 'soil', why: 'work out soil for the beds they are going into.' },
+    { id: 'mulch', why: 'estimate mulch for after planting out.' },
+  ]}
+>
+  <h2>How to use it</h2>
+  <ol>
+    <li><strong>Enter a reference date.</strong> This is the date the packet counts from. It is usually your local average last spring frost date, but it can be a planned transplant date, a first autumn frost date, or anything else. You choose it; no location is needed.</li>
+    <li><strong>Say what the date is</strong>, so the schedule reads correctly.</li>
+    <li><strong>Add a line for each timing on the packet.</strong> Enter the number, or both ends of a range such as 6 and 8, choose weeks or days, and choose before or after.</li>
+    <li><strong>Label the task</strong> as sow indoors, transplant outdoors or direct sow, and add the crop name if you like.</li>
+  </ol>
+  <p>
+    One crop can have several lines. Tomatoes might have one line for sowing indoors and another for transplanting.
+  </p>
+
+  <h3>Where to find a frost date</h3>
+  <p>
+    Prunest does not look up or estimate frost dates. A national weather service, a local extension office or gardening society, or an experienced neighbour are better sources than a calculator. Whatever date you use is an average or an estimate, and frost can arrive later than expected.
+  </p>
+
+  <h2>How the dates are calculated</h2>
+  <ul>
+    <li>A week is exactly 7 days, and offsets are whole days or whole weeks.</li>
+    <li>“Before” counts back from the reference date and “after” counts forward.</li>
+    <li>A range gives a window with an earliest and a latest date. If you type a range the other way round, such as 8 to 6, you get the same window.</li>
+    <li>Dates are handled as plain calendar dates with no time of day, so your timezone and daylight saving changes cannot move a result by a day. Leap years and year ends are handled by the calendar.</li>
+  </ul>
+
+  <Fragment slot="more">
+    <h2>Worked example</h2>
+    <div class="worked">
+      <p><strong>A gardener uses 10 May 2027 as their last spring frost date. The tomato packet says “sow indoors 6–8 weeks before last frost”.</strong></p>
+      <ul>
+        <li>6 weeks is 42 days. Counting back from 10 May: 10 days takes you to 30 April, 30 more to 31 March, and 2 more to <strong>29 March 2027</strong>.</li>
+        <li>8 weeks is 56 days, 14 days earlier again: <strong>15 March 2027</strong>.</li>
+        <li>The sowing window is <strong>15 to 29 March 2027</strong>.</li>
+        <li>The same packet says “transplant 2 weeks after last frost”: 10 May + 14 days = <strong>24 May 2027</strong>.</li>
+      </ul>
+      <p>
+        This shows the arithmetic only. The date and timings are an illustration, not a planting recommendation for any region. “Try an example” loads similar lines using the next 10 May.
+      </p>
+    </div>
+
+    <h2>What this calculator does not do</h2>
+    <ul>
+      <li><strong>No frost dates or locations.</strong> You supply the reference date.</li>
+      <li><strong>No guarantee of safe planting.</strong> A calculated date is arithmetic. It cannot tell you that frost has passed or that the soil is warm enough.</li>
+      <li><strong>No crop timings.</strong> There is no plant database. Offsets come from your seed packets.</li>
+      <li><strong>One reference date per schedule.</strong> For timings counted from a different date, reset and build a second schedule, or print each one.</li>
+    </ul>
+
+    <h2>Calendar file</h2>
+    <p>
+      “Download calendar file” saves an .ics file made in your browser, with one all-day event per line (a window becomes a multi-day event). Most calendar apps can import it. Nothing is sent to Prunest.
+    </p>
+  </Fragment>
+</ToolLayout>
+<script>
+  import '../tools/seed';
+</script>

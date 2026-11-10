@@ -1,0 +1,32 @@
+---
+import Page from '../layouts/Page.astro';
+import { site } from '../config/site';
+const who = site.businessName ?? 'the operator of Prunest';
+---
+<Page title="Terms of Use — Prunest" description="The terms for using Prunest’s free garden calculators, including the limits of the estimates they produce." path="/terms" heading="Terms of use">
+  <p>Prunest is provided by {who}. By using the site you agree to these terms.</p>
+
+  <h2>Free tools, provided as they are</h2>
+  <p>The calculators are free to use for personal and commercial garden planning. They are provided “as is”, without any guarantee that they are error-free, always available, or suitable for a particular purpose.</p>
+
+  <h2>Results are estimates</h2>
+  <ul>
+    <li>Results depend entirely on the measurements, product sizes, prices and dates you enter.</li>
+    <li>Volumes and quantities are estimates for simple shapes. Check your measurements and the product details with your supplier before buying.</li>
+    <li>Costs use only the prices you enter. Prunest does not know current prices.</li>
+    <li>Dates from the seed starting calculator are arithmetic. They do not predict frost or weather and do not guarantee that it is safe to sow or plant.</li>
+    <li>Nothing on the site is professional horticultural, landscaping or structural advice.</li>
+  </ul>
+
+  <h2>Responsibility</h2>
+  <p>You are responsible for decisions you make using the results. To the extent the law allows, {who} is not liable for loss arising from use of the site, such as over- or under-ordering materials or plant losses. Nothing in these terms limits rights you have under consumer law that cannot be excluded.</p>
+
+  <h2>Acceptable use</h2>
+  <p>Please do not try to disrupt the site, misuse it to harm others, or copy it wholesale and present it as your own. You are welcome to print results and to link to any page.</p>
+
+  <h2>Content and name</h2>
+  <p>The Prunest name, logo, text, diagrams and code belong to {who} unless stated otherwise.</p>
+
+  <h2>Changes</h2>
+  <p>The tools and these terms may change. The current version is always on this page. See also the <a href="/privacy">privacy page</a>.</p>
+</Page>

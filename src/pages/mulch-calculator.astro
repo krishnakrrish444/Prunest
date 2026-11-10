@@ -1,0 +1,70 @@
+---
+import ToolLayout from '../layouts/ToolLayout.astro';
+---
+<ToolLayout
+  tool="mulch"
+  intro="Add each area you want to cover, leave out anything already covered, and enter the depth you have chosen. You get the net area, the mulch volume, and whole bags or bulk loads with the surplus for each."
+  related={[
+    { id: 'soil', why: 'if you are filling raised beds as well as mulching around them.' },
+    { id: 'spacing', why: 'plan how many plants go into a border before you mulch between them.' },
+    { id: 'seed', why: 'work out sowing dates from your seed packets.' },
+  ]}
+>
+  <h2>How to measure the area</h2>
+  <ol>
+    <li><strong>Break the space into simple shapes.</strong> Most borders can be covered by a few rectangles and circles. Add one section for each.</li>
+    <li><strong>Measure each section once.</strong> For a rectangle, length and width. For a circle, the diameter straight across the middle.</li>
+    <li><strong>Do not let sections overlap.</strong> Where two shapes overlap, that ground is counted twice and you will over-order. Butt the shapes up against each other instead.</li>
+    <li><strong>Leave out what is already covered.</strong> If a section contains paving, a pond, or ground that already has enough mulch, enter that area under “Area to leave out”. It must be smaller than the section it sits in.</li>
+  </ol>
+
+  <h3>Irregular and curved beds</h3>
+  <p>
+    For a curved border, a run of rectangles that follows the curve is usually close enough: measure the length along the middle of the bed and use the average width. For a ring around a tree, enter the outer circle as a section and leave out the area of the inner circle (π × radius²) that stays bare around the trunk.
+  </p>
+
+  <h2>Choosing a depth</h2>
+  <p>
+    The calculator uses exactly the depth you enter. The quick-fill buttons (2, 3 and 4 inches, or 5, 7.5 and 10 cm) are examples to save typing, not recommendations. The right depth depends on the material, what it is for, and what is planted there, so follow the guidance for your product and plants.
+  </p>
+  <p>
+    Depth has a large effect on the order: going from 2 inches to 3 inches is 50% more mulch over the same ground.
+  </p>
+
+  <h2>Using the results</h2>
+  <h3>Required volume and purchase volume</h3>
+  <p>
+    The <strong>required volume</strong> is net area × depth. You cannot usually buy that exact amount, so the “What to buy” table shows the <strong>volume bought</strong> after rounding up to whole bags, or to the step your bulk supplier sells in, and the <strong>surplus</strong> you would have left.
+  </p>
+  <h3>Bags or bulk</h3>
+  <p>
+    Enter a bag size and price, and a bulk step and price, to see both side by side. Bulk is priced on the rounded quantity, because that is what you pay for. The comparison uses only the prices you enter. Add any delivery charge to the price yourself if you want it included.
+  </p>
+
+  <Fragment slot="more">
+    <h2>Worked example</h2>
+    <div class="worked">
+      <p><strong>A border with a paved corner, plus a circular bed, mulched 3 in deep.</strong></p>
+      <ul>
+        <li>Section 1 is 20 ft × 6 ft = 120 sq ft. A 12 sq ft paved corner is left out, so the net area is <strong>108 sq ft</strong>.</li>
+        <li>Section 2 is a circle 8 ft across. Radius 4 ft, so π × 4² = <strong>50.27 sq ft</strong>.</li>
+        <li>Net area: 108 + 50.27 = <strong>158.27 sq ft</strong>.</li>
+        <li>3 in is 0.25 ft, so the required volume is 158.27 × 0.25 = <strong>39.57 cu ft</strong>, which is 39.57 ÷ 27 = 1.465 cu yd.</li>
+        <li>In 2 cu ft bags: 39.57 ÷ 2 = 19.78, so <strong>20 bags</strong>. That buys 40 cu ft, with 0.43 cu ft spare. At $4.50 a bag that is $90.00.</li>
+        <li>In bulk, sold by the half yard: 1.465 ÷ 0.5 = 2.93, so 3 steps = <strong>1.5 cu yd</strong>, with 0.035 cu yd spare. At $40 per cu yd that is $60.00.</li>
+      </ul>
+      <p>Press “Try an example” with imperial units selected to load these numbers. The prices are made up for the example.</p>
+    </div>
+
+    <h2>What this calculator does not do</h2>
+    <ul>
+      <li><strong>It does not recommend a depth or a material.</strong> Those depend on your plants and product.</li>
+      <li><strong>It assumes level ground and an even layer.</strong> Slopes, hollows and mounding around plants change the real amount.</li>
+      <li><strong>It does not allow for settling.</strong> Fresh mulch is fluffier than settled mulch. If you want a margin, round up when you buy.</li>
+      <li><strong>It does not convert to weight.</strong> Bark, wood chip, compost and gravel all weigh very different amounts for the same volume. For materials sold by weight, ask the supplier how much volume a given weight covers.</li>
+    </ul>
+  </Fragment>
+</ToolLayout>
+<script>
+  import '../tools/mulch';
+</script>

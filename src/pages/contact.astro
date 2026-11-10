@@ -1,0 +1,24 @@
+---
+import Page from '../layouts/Page.astro';
+import { site } from '../config/site';
+---
+<Page title="Contact Prunest" description="How to get in touch about Prunest, report a calculation problem, or suggest an improvement." path="/contact" heading="Contact">
+  {site.contactEmail ? (
+    <p>Email <a href={`mailto:${site.contactEmail}`}>{site.contactEmail}</a>{site.businessName ? ` (${site.businessName})` : ''}.</p>
+  ) : (
+    <p>A contact address has not been published on this site yet.</p>
+  )}
+  {site.address && <p>Postal address: {site.address}</p>}
+
+  <h2>Reporting a wrong result</h2>
+  <p>If a calculator gives a result you think is wrong, the most useful report includes:</p>
+  <ul>
+    <li>which calculator you used;</li>
+    <li>the exact values and units you entered (the “Inputs used” section of the results has these);</li>
+    <li>the result you saw and the result you expected.</li>
+  </ul>
+  <p>Printing the results to PDF captures all of that in one page.</p>
+
+  <h2>What we cannot help with</h2>
+  <p>Prunest cannot advise on what to plant, when it is safe to plant in your area, or which products to buy. Your seed supplier, a local gardening society or an extension service are better placed to help.</p>
+</Page>
