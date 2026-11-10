@@ -20,6 +20,8 @@ export interface SpacingInput {
   direction: RowDirection;
   /** Share leftover space equally between both ends instead of leaving it at the far end. */
   centre: boolean;
+  /** Offset every second row by half the in-row spacing (a staggered, triangular pattern). */
+  stagger?: boolean;
 }
 
 export interface AxisLayout {
@@ -44,6 +46,11 @@ export interface SpacingLayout {
   plantAxis: AxisLayout;
   /** Positions of rows (measured across the rows). */
   rowAxis: AxisLayout;
+  /** Staggered layouts only: plant positions in the 2nd, 4th, ... rows. */
+  offsetAxis?: AxisLayout;
+  /** Rows using the full pattern (1st, 3rd, ...) and the offset pattern. */
+  fullRows: number;
+  offsetRows: number;
 }
 
 export function layoutAxis(total: number, spacing: number, clearance: number, centre: boolean): AxisLayout {
@@ -67,7 +74,34 @@ export function calculateSpacing(input: SpacingInput): SpacingLayout {
   const rowAxis = layoutAxis(alongLength ? input.width : input.length, input.betweenRows, input.clearance, input.centre);
   const rows = plantAxis.count === 0 ? 0 : rowAxis.count;
   const perRow = rowAxis.count === 0 ? 0 : plantAxis.count;
-  return { rows, perRow, total: rows * perRow, plantAxis, rowAxis };
+  if (!input.stagger || rows === 0) {
+    return { rows, perRow, total: rows * perRow, plantAxis, rowAxis, fullRows: rows, offsetRows: 0 };
+  }
+  const offsetAxis = offsetLayout(plantAxis, input.clearance);
+  const fullRows = Math.ceil(rows / 2);
+  const offsetRows = Math.floor(rows / 2);
+  return { rows, perRow, total: fullRows * perRow + offsetRows * offsetAxis.count, plantAxis, rowAxis, offsetAxis, fullRows, offsetRows };
+}
+
+/**
+ * Positions for an offset row: every centre sits half a spacing further along
+ * than in the full rows, and must still keep the edge clearance at the far end.
+ */
+export function offsetLayout(full: AxisLayout, clearance: number): AxisLayout {
+  const first = full.first + full.spacing / 2;
+  const limit = full.total - clearance;
+  const room = limit - first;
+  if (room < -1e-9 * Math.max(1, full.total)) {
+    return { ...full, count: 0, first: NaN, last: NaN, leftover: 0 };
+  }
+  const steps = floorCount(Math.max(0, room) / full.spacing);
+  const last = first + steps * full.spacing;
+  return { ...full, count: steps + 1, first, last, leftover: Math.max(0, limit - last) };
+}
+
+/** Row spacing that makes a staggered layout equilateral: every neighbour the same distance apart. */
+export function equilateralRowSpacing(inRow: number): number {
+  return (inRow * Math.sqrt(3)) / 2;
 }
 
 export function otherDirection(d: RowDirection): RowDirection {

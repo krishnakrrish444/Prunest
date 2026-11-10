@@ -1,21 +1,33 @@
 // Shared footprint geometry. All lengths in metres, areas in square metres.
 
-export type Shape = 'rect' | 'circle';
+export type Shape = 'rect' | 'circle' | 'triangle' | 'ring';
 
 export interface Footprint {
   shape: Shape;
-  /** Rectangle only. */
+  /** Rectangle: length. Triangle: base. */
   length?: number;
-  /** Rectangle only. */
+  /** Rectangle: width. Triangle: height measured at a right angle to the base. */
   width?: number;
-  /** Circle only. */
+  /** Circle: diameter. Ring: outer diameter. */
   diameter?: number;
+  /** Ring only: diameter of the uncovered middle. */
+  inner?: number;
 }
 
 export function footprintArea(f: Footprint): number {
-  if (f.shape === 'circle') {
-    const r = (f.diameter ?? NaN) / 2;
-    return Math.PI * r * r;
+  switch (f.shape) {
+    case 'circle': {
+      const r = (f.diameter ?? NaN) / 2;
+      return Math.PI * r * r;
+    }
+    case 'ring': {
+      const R = (f.diameter ?? NaN) / 2;
+      const r = (f.inner ?? NaN) / 2;
+      return Math.PI * (R * R - r * r);
+    }
+    case 'triangle':
+      return ((f.length ?? NaN) * (f.width ?? NaN)) / 2;
+    default:
+      return (f.length ?? NaN) * (f.width ?? NaN);
   }
-  return (f.length ?? NaN) * (f.width ?? NaN);
 }

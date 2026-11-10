@@ -84,3 +84,18 @@ describe('calendar export', () => {
     expect(long).toContain('DTEND;VALUE=DATE:20280101');
   });
 });
+
+import { successions } from '../src/lib/dates';
+
+describe('succession sowings', () => {
+  it('4 sowings every 14 days from 20 Apr 2027', () => {
+    const w = computeWindow(d('2027-05-10'), { from: 20, unit: 'days', direction: 'before' });
+    expect(successions(w, 14, 4).map((x) => toISO(x.start))).toEqual(['2027-04-20', '2027-05-04', '2027-05-18', '2027-06-01']);
+  });
+  it('shifts both ends of a window and crosses the year end', () => {
+    const w = computeWindow(d('2027-12-20'), { from: 0, to: 1, unit: 'weeks', direction: 'after' });
+    const s = successions(w, 21, 2);
+    expect([toISO(s[1]!.start), toISO(s[1]!.end)]).toEqual(['2028-01-10', '2028-01-17']);
+    expect(successions(w, 7, 1)).toHaveLength(1);
+  });
+});

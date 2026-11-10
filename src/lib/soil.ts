@@ -77,3 +77,38 @@ export function calculateSoil(input: SoilInput): SoilResult {
   }
   return result;
 }
+
+// ---- Optional extras ----
+
+export interface MixPart {
+  name: string;
+  /** Relative share, e.g. 2 parts topsoil to 1 part compost. Any positive numbers. */
+  parts: number;
+}
+
+export interface MixShare {
+  name: string;
+  fraction: number;
+  volume: number;
+  /** Whole bags if this ingredient is bought on its own in bags of `bagVolume`. */
+  bags?: number;
+}
+
+/** Split a total volume between ingredients in proportion to the parts entered. */
+export function splitMix(totalVolume: number, mix: MixPart[], bagVolume?: number): MixShare[] {
+  const sum = mix.reduce((s, m) => s + m.parts, 0);
+  return mix.map((m) => {
+    const fraction = m.parts / sum;
+    const volume = totalVolume * fraction;
+    return { name: m.name, fraction, volume, bags: bagVolume ? ceilCount(volume / bagVolume) : undefined };
+  });
+}
+
+/** 1 lb per cubic foot in kg per cubic metre (exact from 0.45359237 kg and 0.3048 m). */
+export const LB_PER_CUFT = 0.45359237 / (0.3048 * 0.3048 * 0.3048);
+export const KG_PER_LB = 0.45359237;
+
+/** Weight in kg from a volume and a density the visitor supplied (kg per cubic metre). */
+export function weightKg(volumeM3: number, densityKgPerM3: number): number {
+  return volumeM3 * densityKgPerM3;
+}

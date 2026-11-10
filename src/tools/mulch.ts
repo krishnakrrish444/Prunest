@@ -4,7 +4,7 @@ import { footprintArea, type Shape } from '../lib/geometry';
 import { calculateMulch, exclusionProblem, type MulchArea, type PurchaseOption } from '../lib/mulch';
 import { fromSI, SYSTEM_OF, UNIT_LABEL, type Unit, type UnitSystem } from '../lib/units';
 import { footprintDiagram } from '../ui/diagram';
-import { block, bullets, headline, inputsUsed, stat, stats, steps, table } from '../ui/html';
+import { block, bullets, fold, headline, inputsUsed, stat, stats, steps, table } from '../ui/html';
 import {
   esc, fieldset, grid, h, Issues, mountTool, NumField, pendingHTML, RowList, rowShell, selectField, take, textField,
   type FieldState, type Row, type Tool,
@@ -16,6 +16,7 @@ interface AreaState {
   length: FieldState;
   width: FieldState;
   diameter: FieldState;
+  inner?: FieldState;
   exclusion: FieldState;
 }
 
@@ -35,6 +36,7 @@ interface AreaRow extends Row {
   length: NumField;
   width: NumField;
   diameter: NumField;
+  inner: NumField;
   exclusion: NumField;
   sync(): void;
 }
@@ -53,10 +55,11 @@ mountTool<MulchState>('mulch', (ctx) => {
 
   const makeRow = (): AreaRow => {
     const name = textField('Name', { placeholder: 'e.g. Front border', optional: true });
-    const shape = selectField<Shape>('Shape', [['rect', 'Rectangular'], ['circle', 'Circular']]);
+    const shape = selectField<Shape>('Shape', [['rect', 'Rectangle'], ['circle', 'Circle'], ['triangle', 'Triangle'], ['ring', 'Ring (circle with a bare middle)']]);
     const length = new NumField({ label: 'Length', units: LEN, unit: len() });
     const width = new NumField({ label: 'Width', units: LEN, unit: len() });
     const diameter = new NumField({ label: 'Diameter', units: LEN, unit: len(), help: 'Straight across the middle of the circle.' });
+    const inner = new NumField({ label: 'Inner diameter', units: LEN, unit: len(), help: 'Straight across the bare middle, for example the gap left around a trunk.' });
     const exclusion = new NumField({
       label: 'Area to leave out',
       units: ['sqft', 'sqm'],
@@ -65,16 +68,21 @@ mountTool<MulchState>('mulch', (ctx) => {
       optional: true,
       help: 'Ground inside this section that is already covered or will not be mulched, such as paving or a pond.',
     });
-    const shell = rowShell(grid(name.root, shape.root), grid(length.root, width.root, diameter.root), grid(exclusion.root));
+    const shell = rowShell(grid(name.root, shape.root), grid(length.root, width.root, diameter.root, inner.root), grid(exclusion.root));
     const sync = () => {
-      const circle = shape.value === 'circle';
-      length.root.hidden = circle;
-      width.root.hidden = circle;
-      diameter.root.hidden = !circle;
+      const round = shape.value === 'circle' || shape.value === 'ring';
+      const tri = shape.value === 'triangle';
+      length.root.hidden = round;
+      width.root.hidden = round;
+      diameter.root.hidden = !round;
+      inner.root.hidden = shape.value !== 'ring';
+      length.rename(tri ? 'Base' : 'Length');
+      width.rename(tri ? 'Height' : 'Width');
+      diameter.rename(shape.value === 'ring' ? 'Outer diameter' : 'Diameter');
     };
     shape.select.addEventListener('change', sync);
     sync();
-    return { ...shell, name: name.input, shape, length, width, diameter, exclusion, sync };
+    return { ...shell, name: name.input, shape, length, width, diameter, inner, exclusion, sync };
   };
 
   const areas = new RowList<AreaRow>('section', makeRow, ctx.refresh);
@@ -107,7 +115,14 @@ mountTool<MulchState>('mulch', (ctx) => {
     fieldset('Buying (optional)', grid(bag.root, bagPrice.root), grid(step.root, bulk.root), grid(cur.root)),
   );
 
-  const blankArea = (): AreaState => ({ name: '', shape: 'rect', length: { v: '', u: len() }, width: { v: '', u: len() }, diameter: { v: '', u: len() }, exclusion: { v: '', u: imp() ? 'sqft' : 'sqm' } });
+  const blankArea = (): AreaState => ({ name: '', shape: 'rect', length: { v: '', u: len() }, width: { v: '', u: len() }, diameter: { v: '', u: len() }, inner: { v: '', u: len() }, exclusion: { v: '', u: imp() ? 'sqft' : 'sqm' } });
+  const describeShape = (row: AreaRow): string =>
+    ({
+      rect: `rectangle, ${row.length.describe()} × ${row.width.describe()}`,
+      triangle: `triangle, base ${row.length.describe()}, height ${row.width.describe()}`,
+      circle: `circle, ${row.diameter.describe()} diameter`,
+      ring: `ring, ${row.diameter.describe()} outside, ${row.inner.describe()} inside`,
+    })[row.shape.value];
   const label = (r: AreaRow, i: number) => {
     const n = r.name.value.trim();
     return n ? `Section ${i + 1} (${n})` : `Section ${i + 1}`;
@@ -156,6 +171,7 @@ mountTool<MulchState>('mulch', (ctx) => {
         length: r.length.getState(),
         width: r.width.getState(),
         diameter: r.diameter.getState(),
+        inner: r.inner.getState(),
         exclusion: r.exclusion.getState(),
       })),
       depth: depth.getState(),
@@ -174,6 +190,7 @@ mountTool<MulchState>('mulch', (ctx) => {
         r.length.setState(a.length);
         r.width.setState(a.width);
         r.diameter.setState(a.diameter);
+        r.inner.setState(a.inner);
         r.exclusion.setState(a.exclusion);
         r.sync();
       });
@@ -186,21 +203,26 @@ mountTool<MulchState>('mulch', (ctx) => {
     },
     setSystem(next) {
       system = next;
-      [...areas.rows.flatMap((r) => [r.length, r.width, r.diameter, r.exclusion]), depth, bag, step, bulk].forEach((f) => f.setSystem(next));
+      [...areas.rows.flatMap((r) => [r.length, r.width, r.diameter, r.inner, r.exclusion]), depth, bag, step, bulk].forEach((f) => f.setSystem(next));
       drawChips();
     },
     update() {
       const issues = new Issues();
       const inputs: MulchArea[] = areas.rows.map((r, i) => {
         const where = `Section ${i + 1}`;
-        const circle = r.shape.value === 'circle';
+        const circle = r.shape.value === 'circle' || r.shape.value === 'ring';
         const a: MulchArea = {
           shape: r.shape.value,
           length: circle ? undefined : take(r.length, issues, { required: true, where }),
           width: circle ? undefined : take(r.width, issues, { required: true, where }),
           diameter: circle ? take(r.diameter, issues, { required: true, where }) : undefined,
+          inner: r.shape.value === 'ring' ? take(r.inner, issues, { required: true, where }) : undefined,
           exclusion: 0,
         };
+        if (a.inner !== undefined && a.diameter !== undefined && a.inner >= a.diameter) {
+          issues.fail(r.inner, 'The inner diameter must be smaller than the outer diameter.');
+          a.inner = undefined;
+        }
         const ex = take(r.exclusion, issues, { required: false });
         const gross = footprintArea(a);
         if (ex !== undefined && Number.isFinite(gross)) {
@@ -224,7 +246,8 @@ mountTool<MulchState>('mulch', (ctx) => {
       const r = calculateMulch({ areas: inputs, depth: d, bagVolume, bagPrice: price, bulkIncrement: increment, bulkPricePerM3: bulkPrice });
       const sym = cur.value;
       const first = areas.rows[0]!;
-      const imperial = SYSTEM_OF[(first.shape.value === 'circle' ? first.diameter : first.length).unit!] === 'imperial';
+      const isRound = (row: AreaRow) => row.shape.value === 'circle' || row.shape.value === 'ring';
+      const imperial = SYSTEM_OF[(isRound(first) ? first.diameter : first.length).unit!] === 'imperial';
       const [aU, vU, vAlt]: [Unit, Unit, Unit] = imperial ? ['sqft', 'cuft', 'cuyd'] : ['sqm', 'l', 'cum'];
       const many = areas.rows.length > 1;
 
@@ -234,6 +257,7 @@ mountTool<MulchState>('mulch', (ctx) => {
         stat('Cubic feet', fmt(fromSI(r.volume, 'cuft'), 2)),
         stat('Cubic yards', fmt(fromSI(r.volume, 'cuyd'), 3)),
         stat('Litres', fmt(fromSI(r.volume, 'l'), 1), `${fmt(r.volume, 3)} m³`),
+        ...(r.coveragePerBag !== undefined ? [stat('One bag covers', fmtUnit(r.coveragePerBag, aU), `${esc(bag.describe())} at ${esc(depth.describe())}`)] : []),
       );
       html += `<p class="fine">This is the <strong>required volume</strong>, before rounding up to whole bags or bulk steps.</p>`;
 
@@ -260,17 +284,19 @@ mountTool<MulchState>('mulch', (ctx) => {
       const foot = many ? ['Total', fmtUnit(r.grossArea, aU), r.exclusionArea > 0 ? fmtUnit(r.exclusionArea, aU) : '–', fmtUnit(r.netArea, aU), fmtUnit(r.volume, vU)] : undefined;
       const figures = areas.rows
         .map((row, i) => {
-          const circle = row.shape.value === 'circle';
+          const circle = isRound(row);
           const inp = inputs[i]!;
           return `<figure class="figure"><figcaption>${esc(label(row, i))}</figcaption>${footprintDiagram({
             shape: row.shape.value,
             ratio: circle ? 1 : inp.length! / inp.width!,
+            innerRatio: inp.shape === 'ring' ? inp.inner! / inp.diameter! : undefined,
+            innerLabel: row.inner.describe(),
             lengthLabel: row.length.describe(),
             widthLabel: row.width.describe(),
             diameterLabel: row.diameter.describe(),
             depthLabel: depth.describe(),
             depthCaption: 'mulch depth',
-            alt: circle ? `Circular area ${row.diameter.describe()} across, mulched ${depth.describe()} deep` : `Rectangular area ${row.length.describe()} by ${row.width.describe()}, mulched ${depth.describe()} deep`,
+            alt: `${describeShape(row)}, mulched ${depth.describe()} deep`,
           })}</figure>`;
         })
         .join('');
@@ -281,26 +307,33 @@ mountTool<MulchState>('mulch', (ctx) => {
       const work = areas.rows.map((row, i) => {
         const inp = inputs[i]!;
         const a = r.areas[i]!;
-        const shape = inp.shape === 'circle' ? `π × (${L(inp.diameter! / 2)})²` : `${L(inp.length!)} × ${L(inp.width!)}`;
+        const shape =
+          inp.shape === 'circle'
+            ? `π × (${L(inp.diameter! / 2)})²`
+            : inp.shape === 'ring'
+              ? `π × ((${L(inp.diameter! / 2)})² − (${L(inp.inner! / 2)})²)`
+              : inp.shape === 'triangle'
+                ? `½ × ${L(inp.length!)} × ${L(inp.width!)}`
+                : `${L(inp.length!)} × ${L(inp.width!)}`;
         return `<strong>${esc(label(row, i))}:</strong> ${shape} = ${fmtUnit(a.gross, au, 3)}${a.exclusion > 0 ? `; less ${fmtUnit(a.exclusion, au, 3)} left out = ${fmtUnit(a.net, au, 3)}` : ''}`;
       });
       work.push(`<strong>Depth:</strong> ${esc(depth.describe())} = ${L(d)}`);
       work.push(`<strong>Volume:</strong> ${fmtUnit(r.netArea, au, 3)} × ${L(d)} = ${fmtUnit(r.volume, vu, 4)}${vu === 'cum' ? ` = ${fmtUnit(r.volume, 'l', 1)}` : ` = ${fmtUnit(r.volume, 'cuyd', 3)}`}`);
       if (r.bags) work.push(`<strong>Bags:</strong> ${fmtUnit(r.volume, bag.unit!)} ÷ ${esc(bag.describe())} = ${fmt(r.volume / bagVolume!, 2)}, rounded up to ${plural(r.bags.count, 'bag')}`);
       if (r.bulk) work.push(`<strong>Bulk:</strong> ${fmtUnit(r.volume, step.unit!, 3)} ÷ ${esc(step.describe())} = ${fmt(r.volume / increment!, 2)} steps, rounded up to ${fmt(r.bulk.count, 0)} = ${fmtUnit(r.bulk.purchasedVolume, step.unit!, 3)}`);
-      html += block('How this was calculated', steps(work) + `<p class="fine">Net area × depth = volume. Figures are rounded for display only.</p>`);
+      html += fold('How this was calculated', steps(work) + `<p class="fine">Net area × depth = volume. Triangle area is ½ × base × height; a ring is the outer circle minus the inner circle. Figures are rounded for display only.</p>`);
 
       const used: [string, string][] = areas.rows.map((row, i) => [
         label(row, i),
-        `${row.shape.value === 'circle' ? `circular, ${row.diameter.describe()} diameter` : `rectangular, ${row.length.describe()} × ${row.width.describe()}`}${inputs[i]!.exclusion > 0 ? `; ${row.exclusion.describe()} left out` : ''}`,
+        `${describeShape(row)}${inputs[i]!.exclusion > 0 ? `; ${row.exclusion.describe()} left out` : ''}`,
       ]);
       used.push(['Mulch depth', depth.describe()]);
       if (bagVolume !== undefined) used.push(['Bag size', bag.describe()]);
       if (price !== undefined) used.push(['Price per bag', fmtMoney(price, sym)]);
       if (increment !== undefined) used.push(['Bulk step', step.describe()]);
       if (bulkPrice !== undefined) used.push(['Bulk price', `${sym}${bulk.describe()}`]);
-      html += block('Inputs used', inputsUsed(used));
-      html += block(
+      html += fold('Inputs used', inputsUsed(used));
+      html += fold(
         'Assumptions',
         bullets([
           'The depth is the one you entered, applied evenly over level ground.',
@@ -310,7 +343,7 @@ mountTool<MulchState>('mulch', (ctx) => {
           'Prices are the ones you entered and exclude delivery or tax unless you included them.',
         ]),
       );
-      ctx.show(html);
+      ctx.show(html, `${fmtUnit(r.volume, vU)}${r.bags ? ` · ${plural(r.bags.count, 'bag')}` : ''}`);
       return true;
     },
   };

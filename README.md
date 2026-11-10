@@ -6,10 +6,10 @@ Primary domain: https://prunest.com
 
 | Path | Tool |
 | --- | --- |
-| `/raised-bed-soil-calculator` | Soil volume, bags and cost for one or more beds |
-| `/mulch-calculator` | Net area, mulch volume, bags vs bulk |
-| `/plant-spacing-calculator` | Rows, plants per row, scaled plan |
-| `/seed-starting-calculator` | Dates from a reference date and seed packet offsets, `.ics` export |
+| `/raised-bed-soil-calculator` | Soil volume, bags and cost for one or more beds; optional mix split and weight from a supplied density |
+| `/mulch-calculator` | Rectangles, circles, triangles and rings; net area, volume, coverage per bag, bags vs bulk |
+| `/plant-spacing-calculator` | Straight or staggered rows, plants per row, scaled plan, optional plant cost |
+| `/seed-starting-calculator` | Dates from a reference date and seed packet offsets, succession sowings, timeline, `.ics` export |
 
 Plus `/`, `/about`, `/contact`, `/privacy`, `/terms`, a real `404`, `sitemap.xml` and `robots.txt`.
 
@@ -55,6 +55,10 @@ Rules the code follows:
 - Switching a unit converts the number so the physical measurement is unchanged, and remembers the exact value so a round trip returns the original.
 - Invalid input is rejected with an inline message. Nothing is silently replaced with a default.
 - Dates are plain calendar dates (`{y, m, d}`), so timezones and daylight saving cannot shift results.
+
+## Shared tool features
+
+Every tool has: try an example, reset, imperial/metric switch, inline validation, a collapsible calculation breakdown, print layout, save on this device, and **copy link to this plan** (the plan is encoded in the URL fragment, which is never sent to the server). On phones a bar at the bottom shows the headline result while the form is being edited. Headings use Zilla Slab, self-hosted from the build (no third-party font requests).
 
 ## Configuration
 
@@ -117,12 +121,12 @@ Also turn on SSL/TLS > Edge Certificates > Always Use HTTPS for both zones.
 
 ## Verification
 
-`npm run verify` runs type checks, 49 unit tests and the production build. The tests cover rectangular and circular volumes, mixed units and unit round trips, exact-fit and partial bag and bulk rounding, mulch exclusions and depth conversions, plant spacing with edge clearance and exact-fit boundaries, and date offsets, ranges, leap days, year ends and calendar export.
+`npm run verify` runs type checks, 62 unit tests and the production build. The tests cover rectangular and circular volumes, mixed units and unit round trips, exact-fit and partial bag and bulk rounding, mulch exclusions and depth conversions, plant spacing with edge clearance and exact-fit boundaries, and date offsets, ranges, leap days, year ends and calendar export.
 
 ## Known limits
 
 - Rectangles and circles only. Other shapes are built from sections.
-- Plant spacing covers regular rows; no staggered or mixed layouts yet.
+- Plant spacing covers one plant type per layout (straight or staggered rows); no mixed plantings.
 - One reference date per seed schedule.
 - Printed diagrams are not true to scale; the labelled dimensions are authoritative.
 - No plant database, regional calendars, prices, weather or accounts, by design.

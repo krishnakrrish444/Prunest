@@ -1,0 +1,57 @@
+---
+// Hand-drawn style planning sheet: one bed seen four ways, one per calculator.
+const dots: [number, number][] = [];
+for (let r = 0; r < 3; r++) for (let c = 0; c < 8; c++) dots.push([62 + c * 30, 72 + r * 39]);
+---
+<svg viewBox="0 0 520 392" class="h-auto w-full rounded-xl border border-leaf-300" role="img" aria-label="A garden planning sheet: a raised bed 8 feet by 4 feet with 24 plant positions, 10 inches of soil, a mulched ring around a tree, and a sowing date label.">
+  <defs>
+    <pattern id="hp-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M20 0H0V20" fill="none" stroke="#dbe3d3" stroke-width="1" />
+    </pattern>
+  </defs>
+  <rect width="520" height="392" fill="#fbfdf8" />
+  <rect width="520" height="392" fill="url(#hp-grid)" />
+
+  <!-- Bed, top view -->
+  <rect x="40" y="50" width="254" height="122" rx="3" fill="#f3ead9" stroke="#7a5a3c" stroke-width="3" />
+  <rect x="62" y="72" width="210" height="78" fill="none" stroke="#4a584e" stroke-dasharray="5 4" />
+  {dots.map(([x, y]) => <circle cx={x} cy={y} r="5.500" fill="#36593f" />)}
+  <g stroke="#1e2a22" stroke-width="1.300">
+    <path d="M40 190H294M40 185v10M294 185v10" />
+    <path d="M24 50V172M19 50h10M19 172h10" />
+  </g>
+  <g font-family="'Zilla Slab', Georgia, serif" font-weight="600" fill="#1e2a22">
+    <text x="167" y="210" text-anchor="middle" font-size="17">8 ft</text>
+    <text transform="translate(15 111) rotate(-90)" text-anchor="middle" font-size="17">4 ft</text>
+    <text x="40" y="36" font-size="18">24 plants, 12 in apart</text>
+  </g>
+
+  <!-- Bed, side view -->
+  <rect x="352" y="62" width="120" height="96" fill="#fff" stroke="#7a5a3c" stroke-width="3" />
+  <rect x="352" y="80" width="120" height="78" fill="#b89572" stroke="#7a5a3c" stroke-width="3" />
+  <path d="M340 158H484" stroke="#1e2a22" stroke-width="2.500" />
+  <path d="M492 80V158M487 80h10M487 158h10" stroke="#1e2a22" stroke-width="1.300" />
+  <g font-family="'Zilla Slab', Georgia, serif" font-weight="600" fill="#1e2a22">
+    <text x="412" y="124" text-anchor="middle" font-size="19" fill="#fff">10 in soil</text>
+    <text x="412" y="184" text-anchor="middle" font-size="17">26.7 cu ft</text>
+  </g>
+
+  <!-- Mulch ring -->
+  <circle cx="112" cy="300" r="62" fill="#c9a877" stroke="#7a5a3c" stroke-width="3" />
+  <circle cx="112" cy="300" r="20" fill="#fbfdf8" stroke="#7a5a3c" stroke-width="2" />
+  <circle cx="112" cy="300" r="7" fill="#5e442c" />
+  <g font-family="'Zilla Slab', Georgia, serif" font-weight="600" fill="#1e2a22">
+    <text x="190" y="290" font-size="18">Mulch 3 in deep</text>
+    <text x="190" y="313" font-size="17" fill="#4a584e" font-weight="600">8 ft ring, 11.8 cu ft</text>
+  </g>
+
+  <!-- Plant label with sowing dates -->
+  <g transform="rotate(-6 420 300)">
+    <path d="M350 268h140a6 6 0 0 1 6 6v46a6 6 0 0 1-6 6H350l-26-29z" fill="#fff" stroke="#36593f" stroke-width="2.500" />
+    <circle cx="345" cy="297" r="4" fill="none" stroke="#36593f" stroke-width="2" />
+    <g font-family="'Zilla Slab', Georgia, serif" fill="#1e2a22">
+      <text x="362" y="291" font-size="17" font-weight="700">Sow indoors</text>
+      <text x="362" y="313" font-size="17" font-weight="600" fill="#36593f">15 to 29 March</text>
+    </g>
+  </g>
+</svg>

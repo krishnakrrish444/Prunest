@@ -108,6 +108,18 @@ export function computeWindow(reference: CalDate, o: Offset): DateWindow {
   return { start, end, isRange: minDays !== maxDays, minDays, maxDays };
 }
 
+/**
+ * Repeat a window for succession sowing: `count` sowings in total, each
+ * `intervalDays` after the one before. The first entry is the original window.
+ */
+export function successions(win: DateWindow, intervalDays: number, count: number): DateWindow[] {
+  return Array.from({ length: Math.max(1, count) }, (_, i) => ({
+    ...win,
+    start: addDays(win.start, i * intervalDays),
+    end: addDays(win.end, i * intervalDays),
+  }));
+}
+
 // ---- iCalendar export (RFC 5545, all-day events) ----
 
 export interface CalendarEvent {

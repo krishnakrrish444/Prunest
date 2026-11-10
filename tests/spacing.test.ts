@@ -75,3 +75,36 @@ describe('edge clearance', () => {
     expect(mid.total - mid.last).toBeCloseTo(mid.first, 12);
   });
 });
+
+import { equilateralRowSpacing } from '../src/lib/spacing';
+
+describe('staggered rows', () => {
+  it('8 ft x 4 ft, 12 in / 18 in, 6 in clearance: rows of 8, 7, 8 = 23', () => {
+    const r = calculateSpacing({ ...base, stagger: true });
+    // Offset row starts at 6 + 6 = 12 in; last allowed centre is 96 - 6 = 90 in; 12,24,...,84 -> 7 plants
+    expect([r.rows, r.fullRows, r.offsetRows]).toEqual([3, 2, 1]);
+    expect(r.offsetAxis!.count).toBe(7);
+    expect(r.offsetAxis!.first).toBeCloseTo(inch(12), 12);
+    expect(r.offsetAxis!.last).toBeCloseTo(inch(84), 12);
+    expect(r.total).toBe(23);
+  });
+  it('offset row keeps its count when leftover space allows the half step', () => {
+    // 100 cm run, 30 cm spacing, no clearance: full rows at 0,30,60,90 (4); offset at 15,45,75 (3). 105 cm run: offset 15..105 (4)
+    const a = calculateSpacing({ length: 1.0, width: 0.6, inRow: 0.3, betweenRows: 0.3, clearance: 0, direction: 'along-length', centre: false, stagger: true });
+    expect([a.perRow, a.offsetAxis!.count, a.rows, a.total]).toEqual([4, 3, 3, 11]);
+    const b = calculateSpacing({ length: 1.05, width: 0.6, inRow: 0.3, betweenRows: 0.3, clearance: 0, direction: 'along-length', centre: false, stagger: true });
+    expect([b.perRow, b.offsetAxis!.count, b.total]).toEqual([4, 4, 12]);
+  });
+  it('offset rows can be empty when only one plant fits per row', () => {
+    const r = calculateSpacing({ length: 0.3, width: 1, inRow: 0.5, betweenRows: 0.25, clearance: 0.1, direction: 'along-length', centre: false, stagger: true });
+    // full: usable 0.1 -> 1 plant at 0.1; offset would be at 0.35 > 0.2 limit -> 0
+    expect([r.perRow, r.offsetAxis!.count]).toEqual([1, 0]);
+    expect(r.total).toBe(r.fullRows);
+  });
+  it('equilateral row spacing is 0.866 x plant spacing', () => {
+    expect(equilateralRowSpacing(12)).toBeCloseTo(10.3923, 4);
+  });
+  it('stagger off is unchanged', () => {
+    expect(calculateSpacing({ ...base, stagger: false }).total).toBe(24);
+  });
+});

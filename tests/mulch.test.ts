@@ -96,3 +96,20 @@ describe('exclusion validation', () => {
     expect(exclusionProblem(10, -1)).toMatch(/negative/);
   });
 });
+
+import { footprintArea } from '../src/lib/geometry';
+
+describe('extra shapes and coverage', () => {
+  it('triangle: base 10 ft, height 6 ft = 30 sq ft', () => {
+    expect(fromSI(footprintArea({ shape: 'triangle', length: ft(10), width: ft(6) }), 'sqft')).toBeCloseTo(30, 9);
+  });
+  it('ring: 8 ft outside, 2 ft inside = pi*(16-1) = 47.124 sq ft', () => {
+    expect(fromSI(footprintArea({ shape: 'ring', diameter: ft(8), inner: ft(2) }), 'sqft')).toBeCloseTo(47.1238898, 6);
+  });
+  it('a 2 cu ft bag covers 8 sq ft at 3 in and 12 sq ft at 2 in; 50 L covers 1 m2 at 5 cm', () => {
+    const areas = [{ shape: 'rect' as const, length: 5, width: 5, exclusion: 0 }];
+    expect(fromSI(calculateMulch({ areas, depth: toSI(3, 'in'), bagVolume: toSI(2, 'cuft') }).coveragePerBag!, 'sqft')).toBeCloseTo(8, 9);
+    expect(fromSI(calculateMulch({ areas, depth: toSI(2, 'in'), bagVolume: toSI(2, 'cuft') }).coveragePerBag!, 'sqft')).toBeCloseTo(12, 9);
+    expect(calculateMulch({ areas, depth: 0.05, bagVolume: toSI(50, 'l') }).coveragePerBag).toBeCloseTo(1, 12);
+  });
+});

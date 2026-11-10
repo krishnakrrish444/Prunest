@@ -100,3 +100,25 @@ describe('rounding and units', () => {
     expect(convert(1, 'cuft', 'l')).toBeCloseTo(28.316846592, 9);
   });
 });
+
+import { KG_PER_LB, LB_PER_CUFT, splitMix, weightKg } from '../src/lib/soil';
+
+describe('soil mix and weight (optional extras)', () => {
+  it('splits 30 cu ft at 2:1:1 into 15, 7.5 and 7.5 cu ft', () => {
+    const m = splitMix(toSI(30, 'cuft'), [{ name: 'Topsoil', parts: 2 }, { name: 'Compost', parts: 1 }, { name: 'Sand', parts: 1 }], toSI(1.5, 'cuft'));
+    expect(m.map((x) => fromSI(x.volume, 'cuft'))).toEqual([expect.closeTo(15, 9), expect.closeTo(7.5, 9), expect.closeTo(7.5, 9)]);
+    expect(m.map((x) => x.bags)).toEqual([10, 5, 5]);
+    expect(m.reduce((s, x) => s + x.fraction, 0)).toBeCloseTo(1, 12);
+  });
+  it('percentages work as parts: 40/40/20 of 1000 L = 400, 400, 200 L; 50 L bags = 8, 8, 4', () => {
+    const m = splitMix(1, [{ name: 'a', parts: 40 }, { name: 'b', parts: 40 }, { name: 'c', parts: 20 }], toSI(50, 'l'));
+    expect(m.map((x) => Math.round(fromSI(x.volume, 'l')))).toEqual([400, 400, 200]);
+    expect(m.map((x) => x.bags)).toEqual([8, 8, 4]);
+  });
+  it('weight uses only the supplied density: 27 cu ft at 75 lb/cu ft = 2025 lb', () => {
+    const kg = weightKg(toSI(27, 'cuft'), 75 * LB_PER_CUFT);
+    expect(kg / KG_PER_LB).toBeCloseTo(2025, 6);
+    expect(weightKg(0.5, 1200)).toBeCloseTo(600, 9);
+    expect(LB_PER_CUFT).toBeCloseTo(16.018463, 5);
+  });
+});

@@ -68,8 +68,8 @@ export class NumField {
   readonly root: HTMLDivElement;
   readonly input: HTMLInputElement;
   readonly select?: HTMLSelectElement;
-  readonly label: string;
-  readonly noun: string;
+  label: string;
+  noun: string;
   touched = false;
   private readonly err: HTMLParagraphElement;
   private readonly opts: NumFieldOptions;
@@ -127,6 +127,15 @@ export class NumField {
     this.input.addEventListener('blur', () => {
       this.touched = true;
     });
+  }
+
+  /** Change the visible label (and the name used in messages), e.g. Length -> Base for a triangle. */
+  rename(label: string): void {
+    if (label === this.label) return;
+    this.label = label;
+    this.noun = label.toLowerCase();
+    this.root.querySelector('label')!.firstChild!.textContent = label;
+    this.select?.setAttribute('aria-label', `${label}: unit`);
   }
 
   get unit(): Unit | undefined {
@@ -302,6 +311,17 @@ export function selectField<T extends string>(label: string, options: [T, string
   };
 }
 
+export function checkField(label: string, help?: string) {
+  const id = nextId('chk');
+  const input = h('input', { type: 'checkbox', id });
+  const root = h('div', {}, h('label', { class: 'check', for: id }, input, label));
+  if (help) {
+    input.setAttribute('aria-describedby', `${id}-help`);
+    root.append(h('p', { id: `${id}-help`, class: 'help', text: help }));
+  }
+  return { root, input };
+}
+
 export function fieldset(legend: string, ...kids: (Node | string)[]): HTMLFieldSetElement {
   return h('fieldset', { class: 'group' }, h('legend', { class: 'group-legend', text: legend }), ...kids);
 }
@@ -403,7 +423,7 @@ export interface ToolContext {
    * Render results. Skips the DOM update when nothing changed, so a button
    * inside the results is not replaced mid-click when a field loses focus.
    */
-  show(html: string): void;
+  show(html: string, summary?: string): void;
 }
 
 function store(action: 'get' | 'set' | 'remove', key: string, value?: string): string | null {
@@ -418,6 +438,25 @@ function store(action: 'get' | 'set' | 'remove', key: string, value?: string): s
 }
 
 const UNITS_KEY = 'prunest:units';
+
+/** Plans travel in the URL fragment, which browsers do not send to the server. */
+export function encodePlan(state: unknown): string {
+  const bytes = new TextEncoder().encode(JSON.stringify(state));
+  let bin = '';
+  bytes.forEach((b) => (bin += String.fromCharCode(b)));
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+export function decodePlan<S>(text: string): S | null {
+  try {
+    if (text.length > 20000) return null;
+    const bin = atob(text.replace(/-/g, '+').replace(/_/g, '/'));
+    const state = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))));
+    return state && typeof state === 'object' && !Array.isArray(state) ? (state as S) : null;
+  } catch {
+    return null;
+  }
+}
 
 export function mountTool<S>(id: string, make: (ctx: ToolContext) => Tool<S>): void {
   const root = document.querySelector<HTMLElement>(`[data-tool="${id}"]`);
@@ -443,11 +482,44 @@ export function mountTool<S>(id: string, make: (ctx: ToolContext) => Tool<S>): v
   };
   form.textContent = '';
   let lastHTML: string | null = null;
-  const show = (html: string) => {
+  const openFolds = new Set<string>();
+  const bar = root.querySelector<HTMLElement>('[data-summary]');
+  const barText = root.querySelector<HTMLElement>('[data-summary-text]');
+  let summaryText = '';
+  let resultsVisible = true;
+  const syncBar = () => {
+    if (bar) bar.hidden = summaryText === '' || resultsVisible;
+  };
+  const applyFolds = () => {
+    results.querySelectorAll<HTMLElement>('[data-fold]').forEach((sec) => {
+      const open = openFolds.has(sec.dataset.fold!);
+      sec.querySelector('button')!.setAttribute('aria-expanded', String(open));
+      sec.querySelector('.fold-body')!.classList.toggle('is-closed', !open);
+    });
+  };
+  const show = (html: string, summary = '') => {
+    summaryText = summary;
+    if (barText) barText.textContent = summary;
+    syncBar();
     if (html === lastHTML) return;
     lastHTML = html;
     results.innerHTML = html;
+    applyFolds();
   };
+  results.addEventListener('click', (e) => {
+    const sec = (e.target as HTMLElement).closest('[data-fold-btn]')?.closest<HTMLElement>('[data-fold]');
+    if (!sec) return;
+    const key = sec.dataset.fold!;
+    if (openFolds.has(key)) openFolds.delete(key);
+    else openFolds.add(key);
+    applyFolds();
+  });
+  if (bar && 'IntersectionObserver' in window) {
+    new IntersectionObserver((entries) => {
+      resultsVisible = entries[0]!.isIntersecting;
+      syncBar();
+    }).observe(results);
+  }
   tool = make({ form, results, system, currency, refresh, show });
 
   const say = (message: string) => {
@@ -494,6 +566,17 @@ export function mountTool<S>(id: string, make: (ctx: ToolContext) => Tool<S>): v
             say('This browser is blocking local storage, so the plan could not be saved.');
           }
           return;
+        case 'share': {
+          const url = `${location.origin}${location.pathname}#plan=${encodePlan(tool.getState())}`;
+          const done = () => say('Link copied. Anyone who opens it sees these entries; nothing is stored online.');
+          const manual = () => {
+            history.replaceState(null, '', url);
+            say('Copying is blocked here, so the link is now in the address bar. Copy it from there.');
+          };
+          if (navigator.clipboard?.writeText) navigator.clipboard.writeText(url).then(done, manual);
+          else manual();
+          return;
+        }
         case 'delete':
           store('remove', planKey);
           deleteBtn.hidden = true;
@@ -505,7 +588,21 @@ export function mountTool<S>(id: string, make: (ctx: ToolContext) => Tool<S>): v
   });
 
   let restored = false;
-  const saved = store('get', planKey);
+  let fromLink = false;
+  const linked = /^#plan=(.+)$/.exec(location.hash);
+  if (linked) {
+    const state = decodePlan<S>(linked[1]!);
+    if (state) {
+      try {
+        tool.setState(state);
+        fromLink = true;
+      } catch {
+        tool.setState(tool.blank());
+      }
+    }
+    history.replaceState(null, '', location.pathname);
+  }
+  const saved = fromLink ? null : store('get', planKey);
   if (saved && saved !== 'ok') {
     try {
       const parsed = JSON.parse(saved) as { v: number; state: S };
@@ -517,9 +614,10 @@ export function mountTool<S>(id: string, make: (ctx: ToolContext) => Tool<S>): v
       store('remove', planKey);
     }
   }
-  if (!restored) tool.setState(tool.blank());
-  deleteBtn.hidden = !restored;
+  if (!restored && !fromLink) tool.setState(tool.blank());
+  deleteBtn.hidden = store('get', planKey) === null;
   if (restored) say('Loaded the plan you saved in this browser.');
+  if (fromLink) say('Loaded the plan from the link you opened. It is not saved unless you save it.');
   refresh();
   root.dataset.ready = 'true';
 }

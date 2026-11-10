@@ -35,6 +35,8 @@ export interface MulchResult {
   bags?: PurchaseOption;
   bulk?: PurchaseOption;
   cheaper?: 'bags' | 'bulk' | 'equal';
+  /** Ground one bag covers at the chosen depth, m². */
+  coveragePerBag?: number;
 }
 
 /** Returns an error message if the exclusion does not fit inside the section. */
@@ -62,6 +64,7 @@ export function calculateMulch(input: MulchInput): MulchResult {
     volume,
   };
   if (input.bagVolume) {
+    result.coveragePerBag = input.bagVolume / input.depth;
     const count = ceilCount(volume / input.bagVolume);
     const purchasedVolume = count * input.bagVolume;
     result.bags = {

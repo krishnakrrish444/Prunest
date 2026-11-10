@@ -33,6 +33,14 @@ import ToolLayout from '../layouts/ToolLayout.astro';
     When the usable run is not an exact multiple of the spacing, some space is left. By default it stays at the far end. Tick “Centre the layout” to share it equally between both ends. The number of plants is the same either way.
   </p>
 
+  <h2>Staggered rows</h2>
+  <p>
+    Tick “Stagger alternate rows” to shift every second row along by half a spacing, so each plant sits opposite the gap in the row before. The shifted rows still have to respect the edge clearance at the far end, so they often hold one plant fewer; the results give both counts and both sets of marks.
+  </p>
+  <p>
+    Staggering on its own does not change the row spacing you entered. If you want every neighbour the same distance away (an even triangle pattern), use the button that sets the row spacing to 0.866 × the plant spacing. That fits more rows into the bed, but only do it if your packet’s row spacing allows rows that close.
+  </p>
+
   <h2>Row direction</h2>
   <p>
     Rows can run along the length of the bed or across its width. Because in-row spacing and row spacing usually differ, the two directions often hold different numbers of plants. The results always show the count for the other direction, with a button to switch.
@@ -56,6 +64,7 @@ import ToolLayout from '../layouts/ToolLayout.astro';
         <li>Rows along the length: the usable length is 96 − 2 × 6 = 84 in. 84 ÷ 12 = 7 steps, so <strong>8 plants per row</strong>, at 6, 18, 30 … 90 in from one end.</li>
         <li>The usable width is 48 − 2 × 6 = 36 in. 36 ÷ 18 = 2 steps, so <strong>3 rows</strong>, at 6, 24 and 42 in from one long side.</li>
         <li>Total: 3 × 8 = <strong>24 positions</strong>.</li>
+        <li>Staggered, rows along the length: the second row starts at 6 + 6 = 12 in and must stop by 90 in, giving 12, 24 … 84 in, which is 7 plants. Rows of 8, 7 and 8 make <strong>23 positions</strong>.</li>
         <li>Rows across the width instead: 36 ÷ 12 = 3 steps gives 4 plants per row, and 84 ÷ 18 = 4.67 gives 4 full steps, so 5 rows. That is <strong>20 positions</strong>, with 12 in of length left over.</li>
       </ul>
       <p>Press “Try an example” with imperial units selected to load these numbers. The spacings are only an illustration; use the figures for your own plants.</p>
@@ -64,7 +73,7 @@ import ToolLayout from '../layouts/ToolLayout.astro';
     <h2>What this calculator does not do</h2>
     <ul>
       <li><strong>It does not know any plant’s spacing.</strong> Prunest has no plant database. Spacing must come from your seed packet, plant label or supplier.</li>
-      <li><strong>Regular rows only.</strong> Staggered (offset) rows and beds with several different plants are not covered yet.</li>
+      <li><strong>One plant type per layout.</strong> Straight and staggered rows are covered; beds mixing several plants at different spacings are not.</li>
       <li><strong>Rectangular beds only.</strong> For an L-shaped bed, lay out each rectangle separately.</li>
       <li><strong>Positions, not advice.</strong> The count is how many centres fit the geometry. Whether to fill every position is your call.</li>
     </ul>
