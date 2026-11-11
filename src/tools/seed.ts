@@ -1,6 +1,6 @@
 // Seed starting date calculator: form and results. Date maths lives in src/lib/dates.ts.
 import {
-  compareDates, computeWindow, formatDate, offsetProblem, parseISODate, successions, toICS, toISO,
+  addDays, compareDates, computeWindow, formatDate, offsetProblem, parseISODate, successions, toICS, toISO,
   type CalDate, type CalendarEvent, type DateWindow, type OffsetDirection, type OffsetUnit,
 } from '../lib/dates';
 import { plural } from '../lib/format';
@@ -31,6 +31,8 @@ interface CropState {
   every?: string;
   /** Index of the reference date this line counts from. */
   ref?: number;
+  /** Days to harvest from this line's date. */
+  dtm?: string;
 }
 
 interface SeedState {
@@ -61,6 +63,7 @@ interface CropRow extends Row {
   direction: ReturnType<typeof selectField<OffsetDirection>>;
   repeat: NumField;
   every: NumField;
+  dtm: NumField;
   refPick: ReturnType<typeof selectField<string>>;
   /** Reference id this line asked for, kept while options are rebuilt. */
   wanted?: string;
@@ -79,6 +82,12 @@ const REF: Record<RefKind, string> = {
   other: 'reference date',
 };
 const MAX_REFS = 3;
+const KIND_LABEL: Record<Activity | 'harvest', string> = { indoors: 'Sow indoors', transplant: 'Transplant', direct: 'Direct sow', other: 'Other task', harvest: 'Expected harvest' };
+const timelineLegend = (kinds: (Activity | 'harvest')[]): string =>
+  `<ul class="bar-legend">${(Object.keys(KIND_LABEL) as (Activity | 'harvest')[])
+    .filter((k) => kinds.includes(k))
+    .map((k) => `<li><span class="tl-key tl-${k}" aria-hidden="true"></span>${KIND_LABEL[k]}</li>`)
+    .join('')}</ul>`;
 
 mountTool<SeedState>('seed', (ctx) => {
   const makeRef = (): RefRow => {
@@ -137,8 +146,9 @@ mountTool<SeedState>('seed', (ctx) => {
     const refPick = selectField<string>('Counted from', []);
     const repeat = new NumField({ label: 'Number of sowings', allowZero: false, wholeNumber: true, max: 26, optional: true, placeholder: '1', help: 'For succession sowing: how many times in total.' });
     const every = new NumField({ label: 'Days between sowings', allowZero: false, wholeNumber: true, max: 366, optional: true, suffix: 'days' });
-    const shell = rowShell(grid(name.root, activity.root), grid(from.root, to.root), grid(unit.root, direction.root), grid(refPick.root), grid(repeat.root, every.root));
-    const row: CropRow = { ...shell, name: name.input, activity, from, to, unit, direction, repeat, every, refPick };
+    const dtm = new NumField({ label: 'Days to harvest', noun: 'days to harvest', wholeNumber: true, max: 730, optional: true, suffix: 'days', help: 'Days to maturity from the packet, counted from this task’s date. Adds an expected harvest date.' });
+    const shell = rowShell(grid(name.root, activity.root), grid(from.root, to.root), grid(unit.root, direction.root), grid(refPick.root), grid(repeat.root, every.root), grid(dtm.root));
+    const row: CropRow = { ...shell, name: name.input, activity, from, to, unit, direction, repeat, every, dtm, refPick };
     refPick.select.addEventListener('change', () => (row.wanted = refPick.select.value));
     return row;
   };
@@ -211,7 +221,7 @@ mountTool<SeedState>('seed', (ctx) => {
         ],
         crops: [
           { name: 'Tomatoes', activity: 'indoors', from: '6', to: '8', unit: 'weeks', direction: 'before', ref: 0 },
-          { name: 'Tomatoes', activity: 'transplant', from: '2', to: '', unit: 'weeks', direction: 'after', ref: 0 },
+          { name: 'Tomatoes', activity: 'transplant', from: '2', to: '', unit: 'weeks', direction: 'after', ref: 0, dtm: '70' },
           { name: 'Peas', activity: 'direct', from: '4', to: '6', unit: 'weeks', direction: 'before', ref: 0 },
           { name: 'Lettuce', activity: 'direct', from: '2', to: '', unit: 'weeks', direction: 'before', repeat: '4', every: '14', ref: 0 },
           { name: 'Spinach', activity: 'direct', from: '6', to: '8', unit: 'weeks', direction: 'before', ref: 1 },
@@ -229,6 +239,7 @@ mountTool<SeedState>('seed', (ctx) => {
         direction: r.direction.value,
         repeat: r.repeat.input.value,
         every: r.every.input.value,
+        dtm: r.dtm.input.value,
         ref: Math.max(0, refs.rows.findIndex((x) => x.id === r.refPick.select.value)),
       })),
     }),
@@ -258,6 +269,7 @@ mountTool<SeedState>('seed', (ctx) => {
         r.direction.value = c.direction;
         r.repeat.setState({ v: c.repeat ?? '' });
         r.every.setState({ v: c.every ?? '' });
+        r.dtm.setState({ v: c.dtm ?? '' });
         r.wanted = refs.rows[c.ref ?? 0]?.id ?? refs.rows[0]!.id;
       });
       syncRefOptions();
@@ -286,7 +298,7 @@ mountTool<SeedState>('seed', (ctx) => {
         }
       });
 
-      type Line = { row: CropRow; i: number; win: DateWindow; from: number; to?: number; n: number; of: number; every: number; ref: CalDate; refIndex: number };
+      type Line = { row: CropRow; i: number; win: DateWindow; from: number; to?: number; n: number; of: number; every: number; ref: CalDate; refIndex: number; dtm?: number };
       const lines: Line[] = [];
       crops.rows.forEach((row, i) => {
         const where = `Line ${i + 1}`;
@@ -294,6 +306,7 @@ mountTool<SeedState>('seed', (ctx) => {
         const to = take(row.to, issues, { required: false });
         const count = take(row.repeat, issues, { required: false }) ?? 1;
         const gap = take(row.every, issues, { required: false });
+        const dtm = take(row.dtm, issues, { required: false });
         if (count > 1 && gap === undefined && row.every.isEmpty) return issues.fail(row.every, 'Enter the number of days between sowings, or set the number of sowings to 1.');
         if (from === undefined) return;
         const offset = { from, to, unit: row.unit.value, direction: row.direction.value };
@@ -301,7 +314,7 @@ mountTool<SeedState>('seed', (ctx) => {
         if (problem) return issues.fail(row.from, problem);
         const refIndex = Math.max(0, refs.rows.findIndex((r) => r.id === row.refPick.select.value));
         const ref = parsed.get(refs.rows[refIndex]!.id);
-        if (ref) successions(computeWindow(ref, offset), gap ?? 0, count).forEach((win, k) => lines.push({ row, i, win, from, to, n: k + 1, of: count, every: gap ?? 0, ref, refIndex }));
+        if (ref) successions(computeWindow(ref, offset), gap ?? 0, count).forEach((win, k) => lines.push({ row, i, win, from, to, n: k + 1, of: count, every: gap ?? 0, ref, refIndex, dtm }));
       });
       if (!issues.ok || parsed.size !== refs.rows.length) {
         ctx.show(pendingHTML(issues, 'Enter your reference date and at least one timing from a seed packet. Dates appear here as you type.'));
@@ -330,19 +343,55 @@ mountTool<SeedState>('seed', (ctx) => {
         return `${lo === hi ? hi : `${lo}–${hi}`} ${unitWord} ${l.row.direction.value} the ${nameOf(l)}${later}`;
       };
       const dateText = (w: DateWindow) => (w.isRange ? `${formatDate(w.start)} to ${formatDate(w.end)}` : formatDate(w.start));
-      const sorted = [...lines].sort((a, b) => compareDates(a.win.start, b.win.start) || a.i - b.i);
-      events = sorted.map((l) => ({
-        title: `${title(l)} (Prunest)`,
-        description: `${offsetText(l)} (${toISO(l.ref)}). Calculated from dates you entered; check local conditions before planting.`,
-        start: l.win.start,
-        end: l.win.end,
+      // Every row of the schedule: the tasks themselves, plus a harvest row for lines with days to harvest.
+      type Entry = { i: number; title: string; short: string; win: DateWindow; packet: string; kind: Activity | 'harvest'; working: string; note: string; ref: CalDate };
+      const entries: Entry[] = [];
+      for (const l of lines) {
+        const sign = l.row.direction.value === 'before' ? '−' : '+';
+        const days = l.win.isRange ? `${l.win.minDays} and ${l.win.maxDays} days` : `${l.win.minDays} ${l.win.minDays === 1 ? 'day' : 'days'}`;
+        const reversed = l.to !== undefined && l.to < l.from ? ' The range was entered high-to-low; the window is the same either way.' : '';
+        const shift = l.n > 1 ? ` + ${(l.n - 1) * l.every} days for sowing ${l.n}` : '';
+        entries.push({
+          i: l.i,
+          title: title(l),
+          short: shortTitle(l),
+          win: l.win,
+          packet: offsetText(l),
+          kind: l.row.activity.value,
+          working: `${esc(offsetText(l))} → ${esc(formatDate(l.ref))} ${sign} ${days}${shift}`,
+          note: reversed,
+          ref: l.ref,
+        });
+        if (l.dtm !== undefined) {
+          const crop = l.row.name.value.trim();
+          const nth = l.of > 1 ? ` (sowing ${l.n} of ${l.of})` : '';
+          const win: DateWindow = { ...l.win, start: addDays(l.win.start, l.dtm), end: addDays(l.win.end, l.dtm) };
+          entries.push({
+            i: l.i,
+            title: `Expected harvest: ${crop || ACTIVITY[l.row.activity.value].toLowerCase()}${nth}`,
+            short: `${crop || 'Harvest'}${l.of > 1 ? ` ${l.n}` : ''}, harvest`,
+            win,
+            packet: `${l.dtm} days after ${ACTIVITY[l.row.activity.value].toLowerCase()}`,
+            kind: 'harvest',
+            working: `${esc(dateText(l.win))} + ${l.dtm} days to harvest`,
+            note: '',
+            ref: l.ref,
+          });
+        }
+      }
+      const sorted = entries.sort((a, b) => compareDates(a.win.start, b.win.start) || a.i - b.i);
+      events = sorted.map((e) => ({
+        title: `${e.title} (Prunest)`,
+        description: `${e.packet} (counted from ${toISO(e.ref)}). Calculated from dates you entered; check local conditions before planting.`,
+        start: e.win.start,
+        end: e.win.end,
       }));
 
       const firstLine = sorted[0]!;
       let html =
         sorted.length === 1
-          ? headline(esc(title(firstLine)), esc(dateText(firstLine.win)), esc(offsetText(firstLine)))
-          : headline('First task', esc(dateText(firstLine.win)), `${esc(title(firstLine))}. ${sorted.length} tasks in the schedule below.`);
+          ? headline(esc(firstLine.title), esc(dateText(firstLine.win)), esc(firstLine.packet))
+          : headline('First task', esc(dateText(firstLine.win)), `${esc(firstLine.title)}. ${sorted.length} dates in the schedule below.`);
       html +=
         usedRefs.length === 1
           ? `<p class="fine">Reference: your <strong>${esc(usedRefs[0]!.name)}</strong>, entered as <strong>${esc(formatDate(usedRefs[0]!.date))}</strong>. Every date below is counted in whole calendar days from it.</p>`
@@ -352,33 +401,28 @@ mountTool<SeedState>('seed', (ctx) => {
         table(
           'Sowing and planting schedule, earliest first',
           ['Task', 'Date or window', 'From the packet'],
-          sorted.map((l) => [esc(title(l)), esc(dateText(l.win)), esc(offsetText(l))]),
+          sorted.map((e) => [`${e.kind === 'harvest' ? '<span class="tl-key tl-harvest" aria-hidden="true"></span> ' : ''}${esc(e.title)}`, esc(dateText(e.win)), esc(e.packet)]),
           undefined,
           true,
         ) +
           `<p class="mt-3 no-print"><button type="button" class="btn btn-secondary" data-ics>Download calendar file (.ics)</button></p><p class="fine no-print">The file adds each task as an all-day event to most calendar apps. It is created in your browser.</p>`,
       );
-      const shortDate = (c: CalDate) => new Intl.DateTimeFormat(undefined, { month: 'short', year: '2-digit', timeZone: 'UTC' }).format(new Date(Date.UTC(c.y, c.m - 1, 1)));
+      const shortDate = (c: CalDate, withYear: boolean) =>
+        new Intl.DateTimeFormat(undefined, withYear ? { month: 'short', year: 'numeric', timeZone: 'UTC' } : { month: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(c.y, c.m - 1, 1)));
       const refLabel = (r: (typeof usedRefs)[number]) => `${r.name.charAt(0).toUpperCase()}${r.name.slice(1)}: ${formatDate(r.date)}`;
       html += block(
         'Timeline',
         `<figure class="figure">${timelineDiagram(
-          sorted.map((l) => ({ label: shortTitle(l), start: l.win.start, end: l.win.end, kind: l.row.activity.value })),
+          sorted.map((e) => ({ label: e.short, start: e.win.start, end: e.win.end, kind: e.kind })),
           usedRefs.map((r) => ({ date: r.date, label: refLabel(r) })),
           shortDate,
           `Timeline of ${sorted.length} tasks around ${usedRefs.map(refLabel).join(' and ')}`,
-        )}</figure><p class="fine">Each bar is a task or window; ${usedRefs.length === 1 ? `the dashed line is your ${esc(usedRefs[0]!.name)}` : 'each dashed line is one of your reference dates'}. The schedule table has the exact dates.</p>`,
+        )}</figure>${timelineLegend(sorted.map((e) => e.kind))}<p class="fine">Each bar is a task or window; ${usedRefs.length === 1 ? `the dashed line is your ${esc(usedRefs[0]!.name)}` : 'each dashed line is one of your reference dates'}. The schedule table has the exact dates.</p>`,
       );
       html += fold(
         'How each date was worked out',
         steps(
-          sorted.map((l) => {
-            const sign = l.row.direction.value === 'before' ? '−' : '+';
-            const days = l.win.isRange ? `${l.win.minDays} and ${l.win.maxDays} days` : `${l.win.minDays} ${l.win.minDays === 1 ? 'day' : 'days'}`;
-            const reversed = l.to !== undefined && l.to < l.from ? ' The range was entered high-to-low; the window is the same either way.' : '';
-            const shift = l.n > 1 ? ` + ${(l.n - 1) * l.every} days for sowing ${l.n}` : '';
-            return `<strong>${esc(title(l))}:</strong> ${esc(offsetText(l))} → ${esc(formatDate(l.ref))} ${sign} ${days}${shift} = <strong>${esc(dateText(l.win))}</strong>.${reversed}`;
-          }),
+          sorted.map((e) => `<strong>${esc(e.title)}:</strong> ${e.working} = <strong>${esc(dateText(e.win))}</strong>.${e.note}`),
         ) + `<p class="fine">One week is counted as exactly 7 days. Dates are plain calendar dates, so your timezone and daylight saving changes cannot move them.</p>`,
       );
       html += fold(
@@ -387,7 +431,7 @@ mountTool<SeedState>('seed', (ctx) => {
           ...usedRefs.map((r): [string, string] => [usedRefs.length === 1 ? 'Reference date' : `Reference date ${r.i + 1}`, `${formatDate(r.date)} (${r.name})`]),
           ...lines
             .filter((l) => l.n === 1)
-            .map((l): [string, string] => [`Line ${l.i + 1}`, `${title(l).replace(/ \(sowing 1 of \d+\)/, '')}: ${offsetText(l)}${l.of > 1 ? `; ${l.of} sowings, ${l.every} days apart` : ''}`]),
+            .map((l): [string, string] => [`Line ${l.i + 1}`, `${title(l).replace(/ \(sowing 1 of \d+\)/, '')}: ${offsetText(l)}${l.of > 1 ? `; ${l.of} sowings, ${l.every} days apart` : ''}${l.dtm !== undefined ? `; ${l.dtm} days to harvest` : ''}`]),
         ]),
       );
       html += block(
@@ -397,6 +441,7 @@ mountTool<SeedState>('seed', (ctx) => {
           'A frost date is an average or an estimate. Frost can come earlier or later, so a calculated date never guarantees it is safe to plant outdoors.',
           'Check the weather, soil conditions and the seed packet before sowing or transplanting.',
           'Task labels (sow indoors, transplant, direct sow) are the ones you chose for each line.',
+          'Harvest dates are the packet’s days to maturity added to the task date. Real harvests vary with weather, variety and how you grow.',
         ]),
       );
       ctx.show(html, `${plural(sorted.length, 'task')} · first ${formatDate(firstLine.win.start)}`);

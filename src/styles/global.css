@@ -101,6 +101,7 @@
   .stat-note { @apply mt-0.5 block text-xs leading-snug font-normal text-muted; font-family: var(--font-sans); }
   .fine { @apply mt-3 text-sm text-muted; }
   .muted { @apply text-muted; }
+  .badge { @apply ml-1 inline-block rounded border border-leaf-700 bg-leaf-50 px-1.5 text-xs font-semibold whitespace-nowrap text-leaf-800; }
   .result-block { @apply mt-6 border-t border-line pt-4; }
   .result-block h3 { @apply mb-2 text-lg font-semibold; }
   .table-wrap { @apply overflow-x-auto rounded-sm; }
@@ -137,6 +138,13 @@
   .tl-transplant { fill: var(--color-leaf-700); }
   .tl-direct { fill: var(--color-soil); }
   .tl-other { fill: #fff; }
+  .tl-harvest { fill: #e9c46a; stroke-dasharray: 3 2; }
+  .tl-key { @apply inline-block h-3 w-5 rounded-sm border border-ink align-middle; }
+  .tl-key.tl-indoors { background: var(--color-leaf-300); }
+  .tl-key.tl-transplant { background: var(--color-leaf-700); }
+  .tl-key.tl-direct { background: var(--color-soil); }
+  .tl-key.tl-other { background: #fff; }
+  .tl-key.tl-harvest { background: #e9c46a; border-style: dashed; }
   .tl-ref { stroke: var(--color-ink); stroke-width: 2; stroke-dasharray: 2 3; }
   .bar-wrap { @apply mt-4; }
   .bar { @apply block h-4 w-full; }
@@ -185,19 +193,19 @@
      shift creeps back, so update these when a form changes. */
   [data-tool="soil"] [data-form] { min-height: 1270px; }
   [data-tool="mulch"] [data-form] { min-height: 1075px; }
-  [data-tool="spacing"] [data-form] { min-height: 1150px; }
-  [data-tool="seed"] [data-form] { min-height: 1390px; }
+  [data-tool="spacing"] [data-form] { min-height: 1335px; }
+  [data-tool="seed"] [data-form] { min-height: 1570px; }
   @media (min-width: 640px) {
     [data-tool="soil"] [data-form] { min-height: 920px; }
     [data-tool="mulch"] [data-form] { min-height: 860px; }
-    [data-tool="spacing"] [data-form] { min-height: 840px; }
-    [data-tool="seed"] [data-form] { min-height: 965px; }
+    [data-tool="spacing"] [data-form] { min-height: 1000px; }
+    [data-tool="seed"] [data-form] { min-height: 1110px; }
   }
   @media (min-width: 1024px) {
     [data-tool="soil"] [data-form] { min-height: 960px; }
     [data-tool="mulch"] [data-form] { min-height: 955px; }
-    [data-tool="spacing"] [data-form] { min-height: 940px; }
-    [data-tool="seed"] [data-form] { min-height: 1045px; }
+    [data-tool="spacing"] [data-form] { min-height: 1100px; }
+    [data-tool="seed"] [data-form] { min-height: 1210px; }
   }
 
   .ad-slot { @apply my-8 rounded-lg border border-dashed border-line p-3 text-center; }

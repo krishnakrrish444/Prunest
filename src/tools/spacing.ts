@@ -2,9 +2,10 @@
 import { fmt, fmtInput, fmtMoney, plural } from '../lib/format';
 import { axisPositions, calculateSpacing, equilateralRowSpacing, otherDirection, type AxisLayout, type RowDirection, type SpacingInput } from '../lib/spacing';
 import { fromSI, UNIT_LABEL, type Unit, type UnitSystem } from '../lib/units';
+import { seedsNeeded } from '../lib/seeds';
 import { MAX_DRAWN_PLANTS, spacingDiagram } from '../ui/diagram';
 import { block, bullets, fold, headline, inputsUsed, stat, stats, steps, table } from '../ui/html';
-import { checkField, esc, fieldset, grid, h, optionalGroup, Issues, mountTool, NumField, pendingHTML, selectField, take, type FieldState, type Tool } from '../ui/kit';
+import { checkField, encodePlan, esc, fieldset, grid, h, optionalGroup, textField, Issues, mountTool, NumField, pendingHTML, selectField, take, type FieldState, type Tool } from '../ui/kit';
 
 interface SpacingState {
   length: FieldState;
@@ -16,6 +17,8 @@ interface SpacingState {
   centre: boolean;
   stagger?: boolean;
   price?: string;
+  crop?: string;
+  seeds?: { per: string; germ: string; extra: string; packet: string };
 }
 
 const LEN: Unit[] = ['ft', 'in', 'm', 'cm'];
@@ -50,10 +53,17 @@ mountTool<SpacingState>('spacing', (ctx) => {
   });
   const price = new NumField({ label: 'Price per plant', allowZero: true, optional: true, help: `In ${ctx.currency}. Used only to estimate the cost of filling every position.` });
 
+  const crop = textField('Crop', { placeholder: 'e.g. Lettuce', optional: true });
+  const perSpot = new NumField({ label: 'Seeds sown at each position', noun: 'seeds per position', wholeNumber: true, max: 50, optional: true, placeholder: '1', help: 'Blank means 1. Use 2 or more if you sow several and thin to the strongest.' });
+  const germ = new NumField({ label: 'Germination rate', suffix: '%', max: 100, optional: true, help: 'From the seed packet, if it gives one.' });
+  const extra = new NumField({ label: 'Extra for losses', suffix: '%', allowZero: true, max: 200, optional: true, placeholder: '0', help: 'Your own margin for pests, thinning or re-sowing. Blank means none.' });
+  const perPacket = new NumField({ label: 'Seeds per packet', wholeNumber: true, optional: true, help: 'From the packet, to work out how many packets to buy.' });
+
   ctx.form.append(
-    fieldset('Bed', grid(length.root, width.root)),
+    fieldset('Bed', grid(length.root, width.root), grid(crop.root)),
     fieldset('Spacing', grid(inRow.root, betweenRows.root), grid(clearance.root, direction.root), centre),
     fieldset('Pattern', stagger.root, evenWrap),
+    optionalGroup('Seeds needed', 'Seeds and packets from the germination rate', grid(perSpot.root, germ.root), grid(extra.root, perPacket.root)),
     optionalGroup('Cost', 'Price per plant, to cost a full bed', grid(price.root)),
   );
   const syncStagger = () => (evenWrap.hidden = !stagger.input.checked);
@@ -70,6 +80,8 @@ mountTool<SpacingState>('spacing', (ctx) => {
     centre: false,
     stagger: false,
     price: '',
+    crop: '',
+    seeds: { per: '', germ: '', extra: '', packet: '' },
   });
 
   ctx.results.addEventListener('click', (e) => {
@@ -96,6 +108,8 @@ mountTool<SpacingState>('spacing', (ctx) => {
       centre: centreBox.checked,
       stagger: stagger.input.checked,
       price: price.input.value,
+      crop: crop.input.value,
+      seeds: { per: perSpot.input.value, germ: germ.input.value, extra: extra.input.value, packet: perPacket.input.value },
     }),
     setState(s) {
       length.setState(s.length);
@@ -107,6 +121,11 @@ mountTool<SpacingState>('spacing', (ctx) => {
       centreBox.checked = Boolean(s.centre);
       stagger.input.checked = Boolean(s.stagger);
       price.setState({ v: s.price ?? '' });
+      crop.input.value = s.crop ?? '';
+      perSpot.setState({ v: s.seeds?.per ?? '' });
+      germ.setState({ v: s.seeds?.germ ?? '' });
+      extra.setState({ v: s.seeds?.extra ?? '' });
+      perPacket.setState({ v: s.seeds?.packet ?? '' });
       syncStagger();
     },
     setSystem(next) {
@@ -121,6 +140,11 @@ mountTool<SpacingState>('spacing', (ctx) => {
       const q = take(betweenRows, issues, { required: true });
       const c = take(clearance, issues, { required: false }) ?? 0;
       const unitPrice = take(price, issues, { required: false });
+      const k = take(perSpot, issues, { required: false });
+      const g = take(germ, issues, { required: false });
+      const x = take(extra, issues, { required: false });
+      const pk = take(perPacket, issues, { required: false });
+      const wantSeeds = [k, g, x, pk].some((v) => v !== undefined);
       if (!issues.ok || L === undefined || W === undefined || p === undefined || q === undefined) {
         ctx.show(pendingHTML(issues, 'Enter the bed size and the spacing from your seed packet or plant label. The plan appears here as you type.'));
         return false;
@@ -154,6 +178,9 @@ mountTool<SpacingState>('spacing', (ctx) => {
         ['Pattern', input.stagger ? 'alternate rows staggered by half a spacing' : 'straight grid'],
       ];
       if (unitPrice !== undefined) used.push(['Price per plant', fmtMoney(unitPrice, ctx.currency)]);
+      const cropName = crop.input.value.trim();
+      if (cropName) used.unshift(['Crop', cropName]);
+      if (wantSeeds) used.push(['Seeds', `${k ?? 1} per position${g !== undefined ? `; ${fmt(g, 1)}% germination` : ''}${x ? `; ${fmt(x, 1)}% extra` : ''}${pk !== undefined ? `; ${fmt(pk, 0)} per packet` : ''}`]);
 
       if (lay.total === 0) {
         const why: string[] = [];
@@ -185,6 +212,28 @@ mountTool<SpacingState>('spacing', (ctx) => {
         html += `<p class="fine">Staggered pattern: ${fmt(lay.total, 0)} positions, against ${fmt(grid.total, 0)} in a straight grid with the same spacings. Nearest plants in neighbouring rows are ${D(diag, pu)} apart, centre to centre${diag < p * (1 - 1e-9) ? `, which is closer than the ${esc(inRow.describe())} between plants in a row` : ''}.</p>`;
       }
       html += compare;
+
+      if (wantSeeds) {
+        const roundUp = (exact: number, whole: number) => (Math.abs(exact - whole) < 1e-9 ? fmt(whole, 0) : `${fmt(exact, 2)}, rounded up to ${fmt(whole, 0)}`);
+        const sd = seedsNeeded({ positions: lay.total, perSpot: k ?? 1, germination: g !== undefined ? g / 100 : undefined, extraPct: x ?? 0, perPacket: pk });
+        const how =
+          (k ?? 1) === 1 && g !== undefined
+            ? `${fmt(lay.total, 0)} positions ÷ ${fmt(g, 1)}% germination${x ? ` × ${fmt(1 + x / 100, 3)} extra` : ''} = ${roundUp(sd.exact, sd.seeds)}. Sowing one seed per position, this is enough for one plant per position on average; some positions will still need filling.`
+            : `${fmt(lay.total, 0)} positions × ${fmt(k ?? 1, 0)} ${(k ?? 1) === 1 ? 'seed' : 'seeds'}${x ? ` × ${fmt(1 + x / 100, 3)} extra` : ''} = ${roundUp(sd.exact, sd.seeds)}.${
+                sd.emptyChance !== undefined
+                  ? ` At ${fmt(g!, 1)}% germination, the chance a position gets no seedling is ${fmt(sd.emptyChance * 100, 2)}%, so expect about ${fmt(sd.emptySpots!, 1)} empty ${sd.emptySpots! >= 0.95 && sd.emptySpots! < 1.05 ? 'position' : 'positions'} to re-sow.`
+                  : (k ?? 1) === 1
+                    ? ' Add a germination rate to cover seeds that do not come up.'
+                    : ''
+              }`;
+        html += block(
+          'Seeds needed',
+          stats(
+            stat('Seeds', fmt(sd.seeds, 0), cropName ? esc(cropName) : `${fmt(k ?? 1, 0)} per position`),
+            ...(sd.packets !== undefined ? [stat('Packets', fmt(sd.packets, 0), `${fmt(pk!, 0)} seeds each`)] : []),
+          ) + `<p class="fine">${how} Germination rates on packets are measured in good conditions; outdoors it is often lower.</p>`,
+        );
+      }
 
       const tooMany = lay.total > MAX_DRAWN_PLANTS;
       html += block(
@@ -254,6 +303,8 @@ mountTool<SpacingState>('spacing', (ctx) => {
           'Spacing comes from your seed packet or plant label. Prunest does not supply spacing for any plant.',
         ]),
       );
+      const schedule = encodePlan({ refs: [{ date: '', kind: 'last-frost', custom: '' }], crops: [{ name: cropName, activity: 'indoors', from: '', to: '', unit: 'weeks', direction: 'before', ref: 0 }] });
+      html += `<p class="no-print mt-6"><a class="btn btn-secondary" href="/seed-starting-calculator#plan=${schedule}">${cropName ? `Make a sowing schedule for ${esc(cropName)}` : 'Make a sowing schedule for these plants'}</a></p>`;
       ctx.show(html, `${plural(lay.total, 'position')} · ${plural(lay.rows, 'row')}`);
       return true;
     },

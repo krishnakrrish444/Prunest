@@ -1,9 +1,10 @@
 // Mulch calculator: form and results. Maths lives in src/lib/mulch.ts.
 import { fmt, fmtMoney, fmtUnit, plural } from '../lib/format';
 import { footprintArea, type Shape } from '../lib/geometry';
-import { calculateMulch, exclusionProblem, type MulchArea, type PurchaseOption } from '../lib/mulch';
-import { fromSI, SYSTEM_OF, UNIT_LABEL, type Unit, type UnitSystem } from '../lib/units';
+import { calculateMulch, exclusionProblem, type MulchArea } from '../lib/mulch';
+import { fromSI, SYSTEM_OF, toSI, UNIT_LABEL, type Unit, type UnitSystem } from '../lib/units';
 import { footprintDiagram } from '../ui/diagram';
+import { bagRow, ExtraBags, purchaseTable, type ExtraBagState, type PurchaseRow } from '../ui/purchase';
 import { block, bullets, fold, headline, inputsUsed, stat, stats, steps, table } from '../ui/html';
 import {
   esc, fieldset, grid, h, Issues, mountTool, NumField, optionalGroup, pendingHTML, RowList, rowShell, selectField, take, textField,
@@ -25,6 +26,7 @@ interface MulchState {
   depth: FieldState;
   bag: FieldState;
   bagPrice: string;
+  extraBags?: ExtraBagState[];
   step: FieldState;
   bulk: FieldState;
   cur: string;
@@ -105,6 +107,7 @@ mountTool<MulchState>('mulch', (ctx) => {
   const bagPrice = new NumField({ label: 'Price per bag', allowZero: true, optional: true });
   const step = new NumField({ label: 'Bulk sold in steps of', noun: 'bulk step', units: ['cuyd', 'cum'], unit: imp() ? 'cuyd' : 'cum', optional: true, help: 'The smallest amount the supplier adds at a time, for example 0.5 or 1.' });
   const bulk = new NumField({ label: 'Bulk price', units: ['cuyd', 'cum'], unit: imp() ? 'cuyd' : 'cum', perUnit: true, allowZero: true, optional: true });
+  const extraBags = new ExtraBags(system, ctx.refresh);
   const cur = selectField<string>('Currency symbol', [['$', '$'], ['£', '£'], ['€', '€']]);
 
   ctx.form.append(
@@ -112,7 +115,7 @@ mountTool<MulchState>('mulch', (ctx) => {
     h('p', { class: 'help mb-3', text: 'Split an irregular area into simple sections and add one row for each. Sections must not overlap, or the overlap is counted twice.' }),
     areas.root,
     fieldset('Depth', grid(depth.root), chips),
-    optionalGroup('Buying', 'Bags and bulk, with prices to compare', grid(bag.root, bagPrice.root), grid(step.root, bulk.root), grid(cur.root)),
+    optionalGroup('Buying', 'Bags and bulk, with prices to compare', grid(bag.root, bagPrice.root), extraBags.root, grid(step.root, bulk.root), grid(cur.root)),
   );
 
   const blankArea = (): AreaState => ({ name: '', shape: 'rect', length: { v: '', u: len() }, width: { v: '', u: len() }, diameter: { v: '', u: len() }, inner: { v: '', u: len() }, exclusion: { v: '', u: imp() ? 'sqft' : 'sqm' } });
@@ -148,6 +151,7 @@ mountTool<MulchState>('mulch', (ctx) => {
             depth: { v: '3', u: 'in' },
             bag: { v: '2', u: 'cuft' },
             bagPrice: '4.5',
+            extraBags: [{ bag: { v: '3', u: 'cuft' }, price: '6' }],
             step: { v: '0.5', u: 'cuyd' },
             bulk: { v: '40', u: 'cuyd' },
             cur: ctx.currency,
@@ -160,6 +164,7 @@ mountTool<MulchState>('mulch', (ctx) => {
             depth: { v: '7.5', u: 'cm' },
             bag: { v: '60', u: 'l' },
             bagPrice: '5',
+            extraBags: [{ bag: { v: '80', u: 'l' }, price: '6.5' }],
             step: { v: '0.5', u: 'cum' },
             bulk: { v: '55', u: 'cum' },
             cur: ctx.currency,
@@ -177,6 +182,7 @@ mountTool<MulchState>('mulch', (ctx) => {
       depth: depth.getState(),
       bag: bag.getState(),
       bagPrice: bagPrice.input.value,
+      extraBags: extraBags.getState(),
       step: step.getState(),
       bulk: bulk.getState(),
       cur: cur.value,
@@ -197,6 +203,7 @@ mountTool<MulchState>('mulch', (ctx) => {
       depth.setState(s.depth);
       bag.setState(s.bag);
       bagPrice.setState({ v: s.bagPrice ?? '' });
+      extraBags.setState(s.extraBags);
       step.setState(s.step);
       bulk.setState(s.bulk);
       cur.value = s.cur ?? ctx.currency;
@@ -204,6 +211,7 @@ mountTool<MulchState>('mulch', (ctx) => {
     setSystem(next) {
       system = next;
       [...areas.rows.flatMap((r) => [r.length, r.width, r.diameter, r.inner, r.exclusion]), depth, bag, step, bulk].forEach((f) => f.setSystem(next));
+      extraBags.setSystem(next);
       drawChips();
     },
     update() {
@@ -238,6 +246,8 @@ mountTool<MulchState>('mulch', (ctx) => {
       const increment = take(step, issues, { required: false });
       const bulkPrice = take(bulk, issues, { required: false });
       if (price !== undefined && bag.isEmpty) issues.fail(bag, 'Enter the bag size so the price per bag can be used.');
+      const extras = extraBags.read(issues);
+      if (extras.length > 0 && bag.isEmpty && price === undefined) issues.fail(bag, 'Enter the first bag size to compare it with the others.');
       if (bulkPrice !== undefined && step.isEmpty) issues.fail(step, 'Enter the step the supplier sells in, for example 0.5 or 1, so the bulk amount can be rounded.');
       if (!issues.ok || d === undefined) {
         ctx.show(pendingHTML(issues, 'Enter each area and the mulch depth you want. Results appear here as you type.'));
@@ -262,20 +272,40 @@ mountTool<MulchState>('mulch', (ctx) => {
       html += `<p class="fine">This is the <strong>required volume</strong>, before rounding up to whole bags or bulk steps.</p>`;
 
       if (r.bags || r.bulk) {
-        const row = (name: string, buy: string, o: PurchaseOption, u: Unit) => [name, buy, fmtUnit(o.purchasedVolume, u, 3), fmtUnit(o.surplusVolume, u, 3), o.cost !== undefined ? fmtMoney(o.cost, sym) : '–'];
-        const rows: string[][] = [];
-        if (r.bags) rows.push(row('Bags', `${plural(r.bags.count, 'bag')} of ${esc(bag.describe())}`, r.bags, bag.unit!));
-        if (r.bulk) rows.push(row('Bulk', `${plural(r.bulk.count, 'step')} of ${esc(step.describe())}`, r.bulk, step.unit!));
-        let body = table('Purchase options', ['Option', 'Buy', 'Volume bought', 'Surplus', 'Cost'], rows);
-        if (r.cheaper) {
-          const diff = Math.abs(r.bags!.cost! - r.bulk!.cost!);
-          body += `<p class="fine"><strong>${
-            r.cheaper === 'equal' ? 'Both options cost the same' : `${r.cheaper === 'bags' ? 'Bags' : 'Bulk'} cost${r.cheaper === 'bags' ? '' : 's'} ${fmtMoney(diff, sym)} less`
-          }</strong> at the prices you entered. Delivery charges are not included unless you added them to the price.</p>`;
+        const cmp: PurchaseRow[] = [];
+        if (r.bags) cmp.push(bagRow(r.volume, { volume: bagVolume!, price }, bag.describe(), bag.unit!, sym));
+        extras.forEach((e) => cmp.push(bagRow(r.volume, e.option, e.label, e.unit, sym)));
+        if (r.bulk) {
+          cmp.push({
+            name: 'Bulk',
+            buy: `${plural(r.bulk.count, 'step')} of ${esc(step.describe())}`,
+            purchasedVolume: r.bulk.purchasedVolume,
+            surplusVolume: r.bulk.surplusVolume,
+            cost: r.bulk.cost,
+            unitCost: bulkPrice !== undefined ? `${sym}${esc(bulk.describe())}` : undefined,
+            unit: step.unit!,
+          });
         }
-        body += `<p class="fine">Volume bought is the rounded purchase quantity. Surplus is what is left after spreading the required volume.</p>`;
-        html += block('What to buy', body);
+        html += block(
+          'What to buy',
+          purchaseTable(cmp, bag.unit ?? 'cuft', sym) +
+            `<p class="fine">Volume bought is the rounded purchase quantity. Surplus is what is left after spreading the required volume.</p>`,
+        );
       }
+      // The same ground at other depths, for comparison only: the depth you entered is the one used above.
+      const alts = (imperial ? [1, 2, 3, 4].map((n) => [n, 'in'] as const) : [2.5, 5, 7.5, 10].map((n) => [n, 'cm'] as const)).map(([n, u]) => ({ label: `${n} ${UNIT_LABEL[u]}`, depth: toSI(n, u) }));
+      html += fold(
+        'Same area at other depths',
+        table(
+          'Mulch needed for the same net area at other depths',
+          ['Depth', 'Volume', 'Cubic yards or m³', ...(r.bags ? [`Bags of ${esc(bag.describe())}`] : [])],
+          alts.map((a) => {
+            const v = r.netArea * a.depth;
+            const mine = Math.abs(a.depth - d) < 1e-6;
+            return [`${a.label}${mine ? ' <strong class="badge">Your depth</strong>' : ''}`, fmtUnit(v, vU), fmtUnit(v, vAlt, 3), ...(r.bags ? [fmt(Math.ceil(v / bagVolume! - 1e-9), 0)] : [])];
+          }),
+        ) + `<p class="fine">For comparison only, not recommendations. Everything above uses the depth you entered (${esc(depth.describe())}).</p>`,
+      );
 
       const rows = areas.rows.map((row, i) => {
         const a = r.areas[i]!;
@@ -329,6 +359,7 @@ mountTool<MulchState>('mulch', (ctx) => {
       ]);
       used.push(['Mulch depth', depth.describe()]);
       if (bagVolume !== undefined) used.push(['Bag size', bag.describe()]);
+      extras.forEach((e, k) => used.push([`Bag size ${k + 2}`, `${e.label}${e.option.price !== undefined ? ` at ${fmtMoney(e.option.price, sym)}` : ''}`]));
       if (price !== undefined) used.push(['Price per bag', fmtMoney(price, sym)]);
       if (increment !== undefined) used.push(['Bulk step', step.describe()]);
       if (bulkPrice !== undefined) used.push(['Bulk price', `${sym}${bulk.describe()}`]);

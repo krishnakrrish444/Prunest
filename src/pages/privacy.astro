@@ -11,7 +11,7 @@ const who = site.businessName ?? 'the operator of Prunest';
   <ul>
     <li>There are no accounts and no sign-in.</li>
     <li>The measurements, prices and dates you type into the calculators are processed in your browser and are not sent to Prunest.</li>
-    <li>Calculator features work without cookies.</li>
+    <li>Calculator features work without cookies.{site.googleAnalyticsId && ' Google Analytics sets cookies to count visits; see Analytics below.'}</li>
     {!adsEnabled && <li>There is no advertising on the site at present.</li>}
     {!hasAnalytics && <li>There are no analytics or tracking scripts on the site at present.</li>}
   </ul>
@@ -23,7 +23,6 @@ const who = site.businessName ?? 'the operator of Prunest';
     <li><strong>Saved plans.</strong> Only if you press “Save on this device”, the entries for that calculator are stored (keys beginning <code>prunest:plan:</code>).</li>
   </ul>
   <p>This data stays in your browser on that device. It is not uploaded, and Prunest cannot see it. To remove it, press “Delete saved plan” on the calculator, or clear site data for prunest.com in your browser settings, which removes the unit preference as well.</p>
-  {site.googleAnalyticsId && <p>The site also stores your analytics choice in local storage under <code>prunest:analytics</code>.</p>}
   <p>The calendar file from the seed starting calculator and any PDF you print are created on your device.</p>
 
   <h2>Offline copy of the site</h2>
@@ -40,7 +39,7 @@ const who = site.businessName ?? 'the operator of Prunest';
       <h2 id="analytics">Analytics</h2>
       {analyticsEnabled && <p>Cloudflare Web Analytics counts page views and measures page speed without using cookies or local storage.</p>}
       {site.googleAnalyticsId && (
-        <p>With your permission, Google Analytics uses cookies to measure visits. It receives page paths and technical information about your browser. Calculator entries and the query string and fragment of the page address are excluded. You can change your choice under “Analytics preferences” in the footer. Read <a href="https://policies.google.com/technologies/partner-sites" rel="noopener">how Google uses information from sites that use its services</a>.</p>
+        <p>The site uses Google Analytics to count visits and see which calculators are used. It sets first-party cookies (named <code>_ga</code> and <code>_ga_…</code>) and receives the page path and technical information about your browser and device, such as an approximate location derived from your IP address. Calculator entries are never sent, and neither is the query string or the <code>#plan=</code> part of a shared link. Google signals and ad personalisation are turned off. You can block it with your browser’s privacy settings or <a href="https://tools.google.com/dlpage/gaoptout" rel="noopener">Google’s opt-out add-on</a>. Read <a href="https://policies.google.com/technologies/partner-sites" rel="noopener">how Google uses information from sites that use its services</a>.</p>
       )}
     </>
   )}

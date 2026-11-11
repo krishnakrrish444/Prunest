@@ -73,8 +73,13 @@ try {
   ok((await p.$('.headline')) === null && (await text(p, '[data-form] .field-error:not([hidden])')).includes('not a number'), 'soil: invalid entry shows an inline error and withholds results');
   // Keyboard: Tab reaches "Try an example" and Enter runs it.
   await p.click('[data-action=reset]');
-  await p.focus('[data-action=reset]');
-  await p.keyboard.press('Shift+Tab');
+  if (engine.name() === 'webkit') {
+    // Safari leaves buttons out of the Tab order by default (Option+Tab reaches them), so check Enter on the focused button.
+    await p.focus('[data-action=example]');
+  } else {
+    await p.focus('[data-action=reset]');
+    await p.keyboard.press('Shift+Tab');
+  }
   await p.keyboard.press('Enter');
   ok((await p.$('.headline')) !== null, 'keyboard: Try an example works from the keyboard');
   // Collapsible sections and print view.
@@ -100,7 +105,7 @@ try {
 
   p = await open('/seed-starting-calculator');
   await p.click('[data-action=example]');
-  ok((await p.locator('[data-results] tbody tr').count()) === 8 && (await p.locator('.tl-ref').count()) === 2, 'seed: example builds 8 tasks from two reference dates');
+  ok((await p.locator('[data-results] tbody tr').count()) === 9 && (await p.locator('.tl-ref').count()) === 2, 'seed: example builds 9 dates (8 tasks and a harvest) from two reference dates');
   await p.context().close();
 
   const r = await fetch(B + '/no-such-page');

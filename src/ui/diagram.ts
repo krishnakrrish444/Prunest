@@ -187,11 +187,11 @@ export interface TimelineRow {
   start: CalDate;
   end: CalDate;
   /** Tasks before the reference date are drawn differently from those after. */
-  kind: 'indoors' | 'transplant' | 'direct' | 'other';
+  kind: 'indoors' | 'transplant' | 'direct' | 'other' | 'harvest';
 }
 
 /** Calendar strip: one bar or marker per task, with month divisions and the reference date. */
-export function timelineDiagram(rows: TimelineRow[], refs: { date: CalDate; label: string }[], monthName: (c: CalDate) => string, alt: string): string {
+export function timelineDiagram(rows: TimelineRow[], refs: { date: CalDate; label: string }[], monthName: (c: CalDate, withYear: boolean) => string, alt: string): string {
   const all = [...refs.map((r) => r.date), ...rows.flatMap((r) => [r.start, r.end])];
   const lo = all.reduce((a, b) => (compareDates(a, b) <= 0 ? a : b));
   const hi = all.reduce((a, b) => (compareDates(a, b) >= 0 ? a : b));
@@ -214,7 +214,7 @@ export function timelineDiagram(rows: TimelineRow[], refs: { date: CalDate; labe
     const next = cur.m === 12 ? { y: cur.y + 1, m: 1, d: 1 } : { y: cur.y, m: cur.m + 1, d: 1 };
     const cx = x(cur);
     grid += `<line class="tl-grid" x1="${cx.toFixed(1)}" y1="${top - 6}" x2="${cx.toFixed(1)}" y2="${plotBottom}"/>`;
-    if (months <= 12 || i % Math.ceil(months / 12) === 0) grid += `<text class="dg-text dg-small" x="${(cx + 3).toFixed(1)}" y="${top - 12}">${esc(monthName(cur))}</text>`;
+    if (months <= 12 || i % Math.ceil(months / 12) === 0) grid += `<text class="dg-text dg-small" x="${(cx + 3).toFixed(1)}" y="${top - 12}">${esc(monthName(cur, i === 0 || cur.m === 1))}</text>`;
     cur = next;
     i++;
   }

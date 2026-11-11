@@ -46,11 +46,11 @@ const ogImage = `${site.url}${image}`;
     {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
     {site.adsenseClient && <script is:inline async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${site.adsenseClient}`} crossorigin="anonymous"></script>}
     {site.adsPortalScript && <script is:inline async src={site.adsPortalScript}></script>}
+    {site.googleAnalyticsId && <GoogleAnalytics measurementId={site.googleAnalyticsId} />}
     {analyticsEnabled && <script is:inline defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={JSON.stringify({ token: site.cfAnalyticsToken })}></script>}
   </head>
   <body class="flex min-h-screen flex-col">
     <a href="#main" class="btn btn-primary sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50">Skip to content</a>
-    {site.googleAnalyticsId && <GoogleAnalytics measurementId={site.googleAnalyticsId} />}
     <header class="no-print border-b border-line bg-surface">
       <div class="wrap flex flex-wrap items-center justify-between gap-x-6 gap-y-1 py-3">
         <a href="/" class="flex items-center gap-2 text-ink no-underline" aria-label="Prunest home">
@@ -92,7 +92,6 @@ const ogImage = `${site.url}${image}`;
             <li><a href="/contact">Contact</a></li>
             <li><a href="/privacy">Privacy</a></li>
             <li><a href="/terms">Terms</a></li>
-            {site.googleAnalyticsId && <li><button type="button" class="underline" data-analytics-settings hidden>Analytics preferences</button></li>}
           </ul>
         </nav>
       </div>

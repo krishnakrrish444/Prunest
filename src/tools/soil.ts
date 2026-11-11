@@ -3,9 +3,10 @@ import { fmt, fmtMoney, fmtUnit, plural } from '../lib/format';
 import { calculateSoil, KG_PER_LB, LB_PER_CUFT, splitMix, weightKg, type BedInput, type MixPart } from '../lib/soil';
 import { fromSI, SYSTEM_OF, UNIT_LABEL, type Unit, type UnitSystem } from '../lib/units';
 import { footprintDiagram, shareBar } from '../ui/diagram';
+import { bagRow, ExtraBags, purchaseTable, type ExtraBagState, type PurchaseRow } from '../ui/purchase';
 import { block, bullets, check, fold, headline, inputsUsed, stat, stats, steps, table } from '../ui/html';
 import {
-  esc, fieldset, grid, h, Issues, mountTool, NumField, optionalGroup, pendingHTML, RowList, rowShell, selectField, take, textField,
+  encodePlan, esc, fieldset, grid, h, Issues, mountTool, NumField, optionalGroup, pendingHTML, RowList, rowShell, selectField, take, textField,
   type FieldState, type Row, type Tool,
 } from '../ui/kit';
 
@@ -27,12 +28,13 @@ interface SoilState {
   bulk: FieldState;
   cur: string;
   mix?: { n: string; p: string }[];
+  extraBags?: ExtraBagState[];
   density?: string;
   densityUnit?: DensityUnit;
 }
 
 type DensityUnit = 'lbcuft' | 'kgm3';
-type RectOrCircle = 'rect' | 'circle';
+type RectOrCircle = 'rect' | 'circle' | 'triangle';
 
 interface BedRow extends Row {
   name: HTMLInputElement;
@@ -55,7 +57,7 @@ mountTool<SoilState>('soil', (ctx) => {
 
   const makeRow = (): BedRow => {
     const name = textField('Name', { placeholder: 'e.g. Tomato bed', optional: true });
-    const shape = selectField<RectOrCircle>('Shape', [['rect', 'Rectangular'], ['circle', 'Circular']]);
+    const shape = selectField<RectOrCircle>('Shape', [['rect', 'Rectangular'], ['circle', 'Circular'], ['triangle', 'Triangular (corner bed)']]);
     const length = new NumField({ label: 'Inside length', units: LEN, unit: len() });
     const width = new NumField({ label: 'Inside width', units: LEN, unit: len() });
     const diameter = new NumField({ label: 'Inside diameter', units: LEN, unit: len(), help: 'Measure straight across the widest point, inside the walls.' });
@@ -76,6 +78,9 @@ mountTool<SoilState>('soil', (ctx) => {
     const shell = rowShell(grid(name.root, shape.root), grid(length.root, width.root, diameter.root), grid(depth.root, height.root));
     const sync = () => {
       const circle = shape.value === 'circle';
+      const tri = shape.value === 'triangle';
+      length.rename(tri ? 'Inside base' : 'Inside length');
+      width.rename(tri ? 'Inside height (base to far corner)' : 'Inside width');
       length.root.hidden = circle;
       width.root.hidden = circle;
       diameter.root.hidden = !circle;
@@ -98,6 +103,7 @@ mountTool<SoilState>('soil', (ctx) => {
   const bag = new NumField({ label: 'Bag size', units: ['cuft', 'l'], unit: system === 'imperial' ? 'cuft' : 'l', optional: true, help: 'The volume printed on the bag.' });
   const bagPrice = new NumField({ label: 'Price per bag', allowZero: true, optional: true });
   const bulk = new NumField({ label: 'Bulk price', units: ['cuyd', 'cum'], unit: system === 'imperial' ? 'cuyd' : 'cum', perUnit: true, allowZero: true, optional: true, help: 'The delivered or collected price for one cubic yard or cubic metre.' });
+  const extraBags = new ExtraBags(system, ctx.refresh);
   const cur = selectField<string>('Currency symbol', [['$', '$'], ['£', '£'], ['€', '€']]);
   const mixRows = [0, 1, 2].map((i) => ({
     name: textField(`Ingredient ${i + 1}`, { placeholder: ['e.g. Topsoil', 'e.g. Compost', 'e.g. Grit'][i], optional: true }),
@@ -110,7 +116,7 @@ mountTool<SoilState>('soil', (ctx) => {
     h('h2', { class: 'form-title', text: 'Your beds' }),
     beds.root,
     fieldset('Allowance', grid(allowance.root)),
-    optionalGroup('Buying', 'Bag size and prices, for bag counts and cost', grid(bag.root, bagPrice.root), grid(bulk.root, cur.root)),
+    optionalGroup('Buying', 'Bag sizes and prices, for bag counts and cost', grid(bag.root, bagPrice.root), extraBags.root, grid(bulk.root, cur.root)),
     optionalGroup(
       'Soil mix',
       'Split the total between your own ingredients',
@@ -144,6 +150,7 @@ mountTool<SoilState>('soil', (ctx) => {
             bulk: { v: '45', u: 'cuyd' },
             cur: ctx.currency,
             mix: [{ n: 'Topsoil', p: '2' }, { n: 'Compost', p: '1' }, { n: '', p: '' }],
+            extraBags: [{ bag: { v: '2', u: 'cuft' }, price: '10' }],
           }
         : {
             beds: [
@@ -156,6 +163,7 @@ mountTool<SoilState>('soil', (ctx) => {
             bulk: { v: '60', u: 'cum' },
             cur: ctx.currency,
             mix: [{ n: 'Topsoil', p: '2' }, { n: 'Compost', p: '1' }, { n: '', p: '' }],
+            extraBags: [{ bag: { v: '70', u: 'l' }, price: '8' }],
           },
     getState: () => ({
       beds: beds.rows.map((r) => ({
@@ -173,6 +181,7 @@ mountTool<SoilState>('soil', (ctx) => {
       bulk: bulk.getState(),
       cur: cur.value,
       mix: mixRows.map((m) => ({ n: m.name.input.value, p: m.parts.input.value })),
+      extraBags: extraBags.getState(),
       density: density.input.value,
       densityUnit: densityUnit.value,
     }),
@@ -199,11 +208,13 @@ mountTool<SoilState>('soil', (ctx) => {
         m.parts.setState({ v: s.mix?.[i]?.p ?? '' });
       });
       density.setState({ v: s.density ?? '' });
+      extraBags.setState(s.extraBags);
       densityUnit.value = s.densityUnit ?? (system === 'imperial' ? 'lbcuft' : 'kgm3');
     },
     setSystem(next) {
       system = next;
       allFields().forEach((f) => f.setSystem(next));
+      extraBags.setSystem(next);
       if (density.isEmpty) densityUnit.value = next === 'imperial' ? 'lbcuft' : 'kgm3';
     },
     update() {
@@ -228,6 +239,8 @@ mountTool<SoilState>('soil', (ctx) => {
       const pct = take(allowance, issues, { required: false }) ?? 0;
       const bagVolume = take(bag, issues, { required: false });
       const price = take(bagPrice, issues, { required: false });
+      const extras = extraBags.read(issues);
+      if (extras.length > 0 && bagVolume === undefined && bag.isEmpty && price === undefined) issues.fail(bag, 'Enter the first bag size to compare it with the others.');
       const bulkPrice = take(bulk, issues, { required: false });
       if (price !== undefined && bagVolume === undefined && bag.isEmpty) {
         issues.fail(bag, 'Enter the bag size so the price per bag can be used.');
@@ -292,6 +305,16 @@ mountTool<SoilState>('soil', (ctx) => {
         }
         html += block('Bags', body);
       }
+      if (bagVolume !== undefined && (extras.length > 0 || result.bulkCost !== undefined)) {
+        const cmp: PurchaseRow[] = [
+          bagRow(result.totalVolume, { volume: bagVolume, price }, bag.describe(), bag.unit!, sym),
+          ...extras.map((e) => bagRow(result.totalVolume, e.option, e.label, bag.unit!, sym)),
+        ];
+        if (result.bulkCost !== undefined) {
+          cmp.push({ name: 'Bulk', buy: 'Exact volume', purchasedVolume: result.totalVolume, surplusVolume: 0, cost: result.bulkCost, unitCost: `${sym}${esc(bulk.describe())}`, unit: bulk.unit! });
+        }
+        html += block('Ways to buy, compared', purchaseTable(cmp, bag.unit!, sym) + `<p class="fine">Bag counts are for all beds bought together. Bulk is priced on the exact volume; suppliers may round up to their own load sizes.</p>`);
+      }
       if (result.bulkCost !== undefined) {
         html += block(
           'Bulk estimate',
@@ -348,6 +371,18 @@ mountTool<SoilState>('soil', (ctx) => {
           const circle = r.shape.value === 'circle';
           const inp = inputs[i]!;
           const heightRead = r.height.read();
+          const handoff =
+            r.shape.value === 'rect'
+              ? `<p class="no-print mt-1 px-1 text-sm"><a href="/plant-spacing-calculator#plan=${encodePlan({
+                  length: r.length.getState(),
+                  width: r.width.getState(),
+                  inRow: { v: '', u: SYSTEM_OF[r.length.unit!] === 'imperial' ? 'in' : 'cm' },
+                  betweenRows: { v: '', u: SYSTEM_OF[r.length.unit!] === 'imperial' ? 'in' : 'cm' },
+                  clearance: { v: '', u: SYSTEM_OF[r.length.unit!] === 'imperial' ? 'in' : 'cm' },
+                  direction: 'along-length',
+                  centre: false,
+                })}">Plan plants for this bed</a></p>`
+              : '';
           const height = heightRead.kind === 'ok' ? heightRead.value : undefined;
           return `<figure class="figure"><figcaption>${esc(label(r, i))}</figcaption>${footprintDiagram({
             shape: r.shape.value,
@@ -361,8 +396,10 @@ mountTool<SoilState>('soil', (ctx) => {
             fillRatio: height !== undefined ? inp.depth / height : undefined,
             alt: circle
               ? `Circular bed ${r.diameter.describe()} across with ${r.depth.describe()} of soil to add`
-              : `Rectangular bed ${r.length.describe()} by ${r.width.describe()} with ${r.depth.describe()} of soil to add`,
-          })}</figure>`;
+              : r.shape.value === 'triangle'
+                ? `Triangular bed, base ${r.length.describe()} and height ${r.width.describe()}, with ${r.depth.describe()} of soil to add`
+                : `Rectangular bed ${r.length.describe()} by ${r.width.describe()} with ${r.depth.describe()} of soil to add`,
+          })}${handoff}</figure>`;
         })
         .join('');
       html += block('Breakdown by bed', table('Volume for each bed', head, rows, foot) + `<div class="figures">${figures}</div><p class="fine">Diagrams are not to scale. The labelled measurements are the ones used.</p>`);
@@ -377,23 +414,26 @@ mountTool<SoilState>('soil', (ctx) => {
         const formula =
           inp.shape === 'circle'
             ? `π × (${L(inp.diameter! / 2)})² × ${L(inp.depth)}`
-            : `${L(inp.length!)} × ${L(inp.width!)} × ${L(inp.depth)}`;
+            : inp.shape === 'triangle'
+              ? `½ × ${L(inp.length!)} × ${L(inp.width!)} × ${L(inp.depth)}`
+              : `${L(inp.length!)} × ${L(inp.width!)} × ${L(inp.depth)}`;
         const converted = r.depth.unit !== lu ? ` <span class="muted">(depth ${esc(r.depth.describe())} = ${L(inp.depth)})</span>` : '';
         return `<strong>${esc(label(r, i))}:</strong> ${formula} = ${fmtUnit(b.baseVolume, vu, 4)}${vu === 'cum' ? ` = ${fmtUnit(b.baseVolume, 'l', 1)}` : ''}${converted}`;
       });
       if (many) work.push(`<strong>All beds:</strong> ${result.beds.map((b) => fmt(fromSI(b.baseVolume, main), 2)).join(' + ')} = ${fmtUnit(result.baseVolume, main)}`);
       if (hasExtra) work.push(`<strong>Allowance:</strong> ${fmtUnit(result.baseVolume, main)} × ${fmt(pct, 2)}% = ${fmtUnit(result.allowanceVolume, main)}, giving ${fmtUnit(result.totalVolume, main)} in total`);
-      html += fold('How this was calculated', steps(work) + `<p class="fine">Rectangle: length × width × depth. Circle: π × radius² × depth. Figures are rounded for display only; the full values are carried through every step.</p>`);
+      html += fold('How this was calculated', steps(work) + `<p class="fine">Rectangle: length × width × depth. Circle: π × radius² × depth. Triangle: ½ × base × height × depth. Figures are rounded for display only; the full values are carried through every step.</p>`);
 
       const used: [string, string][] = beds.rows.flatMap((r, i): [string, string][] => [
         [
           label(r, i),
-          `${r.shape.value === 'circle' ? `circular, ${r.diameter.describe()} diameter` : `rectangular, ${r.length.describe()} × ${r.width.describe()}`}; soil to add ${r.depth.describe()}${r.height.isEmpty ? '' : `; wall height ${r.height.describe()}`}`,
+          `${r.shape.value === 'circle' ? `circular, ${r.diameter.describe()} diameter` : r.shape.value === 'triangle' ? `triangular, base ${r.length.describe()}, height ${r.width.describe()}` : `rectangular, ${r.length.describe()} × ${r.width.describe()}`}; soil to add ${r.depth.describe()}${r.height.isEmpty ? '' : `; wall height ${r.height.describe()}`}`,
         ],
       ]);
       used.push(['Extra allowance', hasExtra ? `${fmt(pct, 2)}%` : 'none']);
       if (bagVolume !== undefined) used.push(['Bag size', bag.describe()]);
       if (price !== undefined) used.push(['Price per bag', fmtMoney(price, sym)]);
+      extras.forEach((e, k) => used.push([`Bag size ${k + 2}`, `${e.label}${e.option.price !== undefined ? ` at ${fmtMoney(e.option.price, sym)}` : ''}`]));
       if (bulkPrice !== undefined) used.push(['Bulk price', `${sym}${bulk.describe()}`]);
       if (mix.length > 0) used.push(['Soil mix', mix.map((m) => `${m.name} ${fmt(m.parts, 2)}`).join(' : ')]);
       if (dens !== undefined) used.push(['Density', `${density.describe()} ${densityUnit.value === 'lbcuft' ? 'lb per cu ft' : 'kg per m³'}`]);

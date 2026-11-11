@@ -50,7 +50,7 @@ export const tools: ToolInfo[] = [
     title: 'Raised Bed Soil Calculator — Estimate Soil Volume & Bags',
     description:
       'Work out how much soil fills one or more raised beds. Rectangular or circular, new fill or top-up, with bag counts, bulk estimate and a printable breakdown.',
-    blurb: 'Soil volume for one or more beds, with whole bags, cost, and your own mix split by ingredient.',
+    blurb: 'Soil for one or more beds, with bag sizes compared on cost, your own mix split by ingredient, and corner beds.',
   },
   {
     id: 'mulch',
@@ -68,7 +68,7 @@ export const tools: ToolInfo[] = [
     title: 'Plant Spacing Calculator — Plan Rows & Plant Positions',
     description:
       'Enter bed size and the spacing from your seed packet to see how many rows and plants fit, with a scaled top-down plan and printable measurements.',
-    blurb: 'Straight or staggered rows, plants per row and a scaled plan from the spacing on your seed packet.',
+    blurb: 'Straight or staggered rows, a scaled plan, and how many seeds and packets to buy for the bed.',
   },
   {
     id: 'seed',
@@ -77,7 +77,7 @@ export const tools: ToolInfo[] = [
     title: 'Seed Starting Calculator — Work Back from Your Frost Date',
     description:
       'Turn “6–8 weeks before last frost” into real calendar dates. Enter your own reference date and seed packet timings to build a printable sowing schedule.',
-    blurb: 'Sowing dates, repeat sowings and a timeline from your own frost date and seed packet timings.',
+    blurb: 'Sowing and harvest dates, repeat sowings and a timeline from your own frost dates and seed packets.',
   },
 ];
 

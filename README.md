@@ -6,10 +6,10 @@ Primary domain: https://prunest.com
 
 | Path | Tool |
 | --- | --- |
-| `/raised-bed-soil-calculator` | Soil volume, bags and cost for one or more beds; optional mix split and weight from a supplied density |
-| `/mulch-calculator` | Rectangles, circles, triangles and rings; net area, volume, coverage per bag, bags vs bulk |
-| `/plant-spacing-calculator` | Straight or staggered rows, plants per row, scaled plan, optional plant cost |
-| `/seed-starting-calculator` | Dates from up to three reference dates and seed packet offsets, succession sowings, timeline, `.ics` export |
+| `/raised-bed-soil-calculator` | Soil for rectangular, circular and corner beds; up to three bag sizes and bulk compared on cost; mix split; weight from a supplied density; hand-off to plant spacing |
+| `/mulch-calculator` | Rectangles, circles, triangles and rings; net area, volume, coverage per bag; up to three bag sizes and bulk compared; same area at other depths |
+| `/plant-spacing-calculator` | Straight or staggered rows, scaled plan, seeds and packets needed from the germination rate, plant cost; hand-off to a sowing schedule |
+| `/seed-starting-calculator` | Dates from up to three reference dates and seed packet offsets, succession sowings, harvest dates from days to maturity, timeline, `.ics` export |
 
 Plus `/`, `/about`, `/contact`, `/privacy`, `/terms`, a real `404`, `sitemap.xml` and `robots.txt`.
 
@@ -78,7 +78,7 @@ Everything optional is **off** unless a real value is set at build time. Copy `.
 | `PUBLIC_ADSENSE_SLOT_BELOW_TOOL`, `PUBLIC_ADSENSE_SLOT_IN_CONTENT` | AdSense slot IDs for the two placements |
 | `PUBLIC_ADS_PORTAL_SCRIPT` | HTTPS script URL for the Ads Portal. Slots render as `<div data-ad-placement="below-tool">` and `<div data-ad-placement="in-content">` |
 | `PUBLIC_CF_ANALYTICS_TOKEN` | Cloudflare Web Analytics beacon; adds the analytics section to the privacy page |
-| `PUBLIC_GOOGLE_ANALYTICS_ID` | `G-…` ID. Shows an allow/decline banner on prunest.com only; Google Analytics loads only after “Allow”. Adds the matching privacy text and a footer “Analytics preferences” button |
+| `PUBLIC_GOOGLE_ANALYTICS_ID` | `G-…` ID. Loads Google Analytics on prunest.com only (not previews or local builds), sending page paths without query strings or `#plan=` fragments, with Google signals and ad personalisation off. Adds the matching privacy text. There is no consent banner: UK and EU rules expect consent before analytics cookies, so add a consent tool before relying on this for visitors there |
 
 Ad slots sit below the tool and inside the supporting content only. They are never among inputs or results and are hidden in print. The privacy page is generated from the same flags, so it always matches what is enabled. If you enable AdSense for UK/EEA visitors, set up Google's consent message in the AdSense account first.
 
@@ -129,7 +129,7 @@ Also turn on SSL/TLS > Edge Certificates > Always Use HTTPS for both zones.
 
 ## Verification
 
-`npm run verify` runs type checks, 62 unit tests and the production build. `npm run e2e` runs the browser smoke test; GitHub Actions runs both on every push and pull request, in Chromium, Firefox and WebKit. The tests cover rectangular and circular volumes, mixed units and unit round trips, exact-fit and partial bag and bulk rounding, mulch exclusions and depth conversions, plant spacing with edge clearance and exact-fit boundaries, and date offsets, ranges, leap days, year ends and calendar export.
+`npm run verify` runs type checks, 70 unit tests and the production build. `npm run e2e` runs the browser smoke test; GitHub Actions runs both on every push and pull request, in Chromium, Firefox and WebKit. The tests cover rectangular and circular volumes, mixed units and unit round trips, exact-fit and partial bag and bulk rounding, mulch exclusions and depth conversions, plant spacing with edge clearance and exact-fit boundaries, and date offsets, ranges, leap days, year ends and calendar export.
 
 ## Known limits
 
