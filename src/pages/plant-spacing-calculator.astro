@@ -6,7 +6,7 @@ import ToolLayout from '../layouts/ToolLayout.astro';
   intro="Enter the bed size and the spacing from your seed packet or plant label. You get the number of rows, plants per row, a top-down plan drawn in proportion, and the measurements for marking it out."
   related={[
     { id: 'soil', why: 'work out how much soil the same bed needs.' },
-    { id: 'seed', why: 'turn the packet’s sowing times into dates for the plants you have just laid out.' },
+    { id: 'seed', why: 'turn the packet’s sowing times into dates for the plants you have just laid out. The results link straight to it with your crops filled in.' },
     { id: 'mulch', why: 'estimate mulch for the bed once it is planted.' },
   ]}
 >
@@ -44,6 +44,26 @@ import ToolLayout from '../layouts/ToolLayout.astro';
   <h2>Row direction</h2>
   <p>
     Rows can run along the length of the bed or across its width. Because in-row spacing and row spacing usually differ, the two directions often hold different numbers of plants. The results always show the count for the other direction, with a button to switch.
+  </p>
+
+  <h2>Several crops in one bed</h2>
+  <p>
+    Press “Add another crop” to split the bed along its length. Give each crop its own spacing from its packet and the length of bed it gets; leave the length blank on one crop and it takes whatever is left. Crops are laid out in the order listed, starting from one end.
+  </p>
+  <p>
+    At the two ends of the bed the edge clearance applies as usual. Where two crops meet, each keeps half of its own spacing from the dividing line. A crop at 12 in next to one at 6 in therefore has its last plant 6 in before the line and the other crop’s first plant 3 in after it, 9 in apart, which is more than the 6 in crop needs and the full half-share the 12 in crop asks for.
+  </p>
+
+  <h2>Square-foot grid</h2>
+  <p>
+    Choose “Square-foot grid” under Layout to divide the bed into equal squares, 12 in by default (or 30 cm), and plant each square on its own. The number of plants in a square comes straight from the spacing: the square size divided by the spacing, rounded down, gives the plants along each side.
+  </p>
+  <ul>
+    <li>12 in spacing: 1 per square. 6 in: 2 × 2 = 4. 4 in: 3 × 3 = 9. 3 in: 4 × 4 = 16.</li>
+    <li>Spacing wider than a square, such as 18 in, takes a block of 2 × 2 squares per plant.</li>
+  </ul>
+  <p>
+    Give each crop a number of squares, or leave it blank on one crop to fill the rest. An 8 ft × 4 ft bed is 32 squares of 12 in. Only whole squares are counted; a strip left over at the edge is shown but not planted.
   </p>
 
   <h2>How many seeds to buy</h2>
@@ -88,7 +108,7 @@ import ToolLayout from '../layouts/ToolLayout.astro';
     <h2>What this calculator does not do</h2>
     <ul>
       <li><strong>It does not know any plant’s spacing.</strong> Prunest has no plant database. Spacing must come from your seed packet, plant label or supplier.</li>
-      <li><strong>One plant type per layout.</strong> Straight and staggered rows are covered; beds mixing several plants at different spacings are not.</li>
+      <li><strong>Crops share the bed in sections along its length.</strong> Interplanting two crops in the same rows, or companion patterns within a row, are not covered.</li>
       <li><strong>Rectangular beds only.</strong> For an L-shaped bed, lay out each rectangle separately.</li>
       <li><strong>Positions, not advice.</strong> The count is how many centres fit the geometry. Whether to fill every position is your call.</li>
     </ul>

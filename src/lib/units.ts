@@ -4,11 +4,14 @@
 export type LengthUnit = 'ft' | 'in' | 'yd' | 'm' | 'cm' | 'mm';
 export type AreaUnit = 'sqft' | 'sqyd' | 'sqm';
 export type VolumeUnit = 'cuft' | 'cuyd' | 'l' | 'cum';
-export type Unit = LengthUnit | AreaUnit | VolumeUnit;
+/** Mass units; their SI base is the kilogram. US ton = 2,000 lb. */
+export type MassUnit = 'lb' | 'kg' | 'ton' | 'tonne';
+export type Unit = LengthUnit | AreaUnit | VolumeUnit | MassUnit;
 export type UnitSystem = 'imperial' | 'metric';
 
 const FT = 0.3048;
 const YD = 0.9144;
+const LB = 0.45359237;
 
 export const TO_SI: Record<Unit, number> = {
   ft: FT,
@@ -24,6 +27,10 @@ export const TO_SI: Record<Unit, number> = {
   cuyd: YD * YD * YD,
   l: 0.001,
   cum: 1,
+  lb: LB,
+  kg: 1,
+  ton: 2000 * LB,
+  tonne: 1000,
 };
 
 export const UNIT_LABEL: Record<Unit, string> = {
@@ -40,6 +47,10 @@ export const UNIT_LABEL: Record<Unit, string> = {
   cuyd: 'cu yd',
   l: 'L',
   cum: 'm³',
+  lb: 'lb',
+  kg: 'kg',
+  ton: 'ton',
+  tonne: 'tonne',
 };
 
 export const UNIT_NAME: Record<Unit, string> = {
@@ -56,12 +67,17 @@ export const UNIT_NAME: Record<Unit, string> = {
   cuyd: 'cubic yards',
   l: 'litres',
   cum: 'cubic metres',
+  lb: 'pounds',
+  kg: 'kilograms',
+  ton: 'US tons (2,000 lb)',
+  tonne: 'tonnes (1,000 kg)',
 };
 
 export const SYSTEM_OF: Record<Unit, UnitSystem> = {
   ft: 'imperial', in: 'imperial', yd: 'imperial', m: 'metric', cm: 'metric', mm: 'metric',
   sqft: 'imperial', sqyd: 'imperial', sqm: 'metric',
   cuft: 'imperial', cuyd: 'imperial', l: 'metric', cum: 'metric',
+  lb: 'imperial', ton: 'imperial', kg: 'metric', tonne: 'metric',
 };
 
 export function toSI(value: number, unit: Unit): number {

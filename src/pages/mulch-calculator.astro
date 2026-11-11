@@ -48,6 +48,10 @@ import ToolLayout from '../layouts/ToolLayout.astro';
   <p>
     “Same area at other depths” shows the volume and bags for the same ground at 1 to 4 inches (or 2.5 to 10 cm). It is there to show how much depth changes the order, not to suggest a depth.
   </p>
+  <h3>Gravel, stone and anything sold by weight</h3>
+  <p>
+    Some materials are sold by the ton or tonne rather than by volume. Under Buying, set “Bulk is sold by” to weight, then enter the supplier’s step and price, and the density of that exact product (in pounds per cubic foot or kilograms per cubic metre). The calculator turns the volume into weight with that density, rounds up to whole steps, and shows how much volume the order covers. For example, 1.5 cu yd at a stated 100 lb per cu ft is 40.5 cu ft × 100 = 4,050 lb, which is 5 half-ton steps (2.5 tons). Densities vary a lot between products and with moisture, so Prunest never assumes one.
+  </p>
   <h3>Bags or bulk</h3>
   <p>
     Enter a bag size and price, and a bulk step and price, to see both side by side. Bulk is priced on the rounded quantity, because that is what you pay for. The comparison uses only the prices you enter. Add any delivery charge to the price yourself if you want it included.
@@ -73,7 +77,7 @@ import ToolLayout from '../layouts/ToolLayout.astro';
       <li><strong>It does not recommend a depth or a material.</strong> Those depend on your plants and product.</li>
       <li><strong>It assumes level ground and an even layer.</strong> Slopes, hollows and mounding around plants change the real amount.</li>
       <li><strong>It does not allow for settling.</strong> Fresh mulch is fluffier than settled mulch. If you want a margin, round up when you buy.</li>
-      <li><strong>It does not convert to weight.</strong> Bark, wood chip, compost and gravel all weigh very different amounts for the same volume. For materials sold by weight, ask the supplier how much volume a given weight covers.</li>
+      <li><strong>No guessed weights.</strong> Bark, wood chip, compost and gravel all weigh very different amounts for the same volume. Weight is worked out only from a density you enter for the product.</li>
     </ul>
   </Fragment>
 </ToolLayout>

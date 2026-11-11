@@ -58,10 +58,10 @@ export interface NumFieldOptions {
 }
 
 const IMPERIAL_TO_METRIC: Partial<Record<Unit, Unit>> = {
-  ft: 'm', in: 'cm', yd: 'm', sqft: 'sqm', sqyd: 'sqm', cuft: 'l', cuyd: 'cum',
+  ft: 'm', in: 'cm', yd: 'm', sqft: 'sqm', sqyd: 'sqm', cuft: 'l', cuyd: 'cum', lb: 'kg', ton: 'tonne',
 };
 const METRIC_TO_IMPERIAL: Partial<Record<Unit, Unit>> = {
-  m: 'ft', cm: 'in', mm: 'in', sqm: 'sqft', l: 'cuft', cum: 'cuyd',
+  m: 'ft', cm: 'in', mm: 'in', sqm: 'sqft', l: 'cuft', cum: 'cuyd', kg: 'lb', tonne: 'ton',
 };
 
 export class NumField {
@@ -363,6 +363,8 @@ export class RowList<R extends Row> {
     private readonly make: () => R,
     private readonly onChange: () => void,
     private readonly max = 20,
+    /** Number shown on the first row, and the fewest rows allowed. */
+    private readonly opts: { first?: number; min?: number } = {},
   ) {
     this.list = h('div', { class: 'rows' });
     this.addBtn = h('button', { type: 'button', class: 'btn btn-secondary', text: `+ Add another ${noun}` });
@@ -394,16 +396,17 @@ export class RowList<R extends Row> {
   reset(count: number): R[] {
     this.rows = [];
     this.list.textContent = '';
-    for (let i = 0; i < Math.max(1, Math.min(count, this.max)); i++) this.add();
+    for (let i = 0; i < Math.max(this.opts.min ?? 1, Math.min(count, this.max)); i++) this.add();
     return this.rows;
   }
 
   private renumber(): void {
     const Noun = this.noun.charAt(0).toUpperCase() + this.noun.slice(1);
     this.rows.forEach((row, i) => {
-      row.title.textContent = `${Noun} ${i + 1}`;
-      row.removeBtn.hidden = this.rows.length === 1;
-      row.removeBtn.setAttribute('aria-label', `Remove ${this.noun} ${i + 1}`);
+      const n = i + (this.opts.first ?? 1);
+      row.title.textContent = `${Noun} ${n}`;
+      row.removeBtn.hidden = this.rows.length <= (this.opts.min ?? 1);
+      row.removeBtn.setAttribute('aria-label', `Remove ${this.noun} ${n}`);
     });
     this.addBtn.hidden = this.rows.length >= this.max;
   }

@@ -58,3 +58,25 @@ describe('seeds needed', () => {
     expect(seedsNeeded({ positions: 20, perSpot: 1, germination: 1, extraPct: 0 }).seeds).toBe(20);
   });
 });
+
+import { planByWeight } from '../src/lib/purchase';
+import { LB_PER_CUFT } from '../src/lib/soil';
+
+describe('bought by weight', () => {
+  it('1.5 cu yd of gravel at 100 lb/cu ft, sold in half tons at $60/ton: 4,050 lb -> 5 half tons, $150', () => {
+    const p = planByWeight(toSI(1.5, 'cuyd'), 100 * LB_PER_CUFT, toSI(0.5, 'ton'), 60 / toSI(1, 'ton'));
+    expect(fromSI(p.requiredWeight, 'lb')).toBeCloseTo(4050, 6);
+    expect(p.count).toBe(5);
+    expect(fromSI(p.purchasedWeight, 'ton')).toBeCloseTo(2.5, 9);
+    expect(fromSI(p.surplusWeight, 'lb')).toBeCloseTo(950, 6);
+    expect(fromSI(p.surplusVolume, 'cuft')).toBeCloseTo(9.5, 6);
+    expect(p.cost).toBeCloseTo(150, 9);
+  });
+  it('metric: 1 m3 at 1,600 kg/m3 sold by the tonne = 2 tonnes, exact 1.6 not rounded twice', () => {
+    const p = planByWeight(1, 1600, 1000, 0.045);
+    expect([p.count, p.purchasedWeight]).toEqual([2, 2000]);
+    expect(p.surplusVolume).toBeCloseTo(0.25, 12);
+    expect(p.cost).toBeCloseTo(90, 9);
+    expect(planByWeight(1, 1500, 500).count).toBe(3);
+  });
+});

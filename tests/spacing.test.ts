@@ -108,3 +108,71 @@ describe('staggered rows', () => {
     expect(calculateSpacing({ ...base, stagger: false }).total).toBe(24);
   });
 });
+
+import { calculateSections, planSquares, squareFit } from '../src/lib/spacing';
+
+describe('mixed beds: crops in sections along the length', () => {
+  const bed = { length: ft(8), width: ft(4), clearance: inch(6), direction: 'along-length' as const, centre: false };
+  it('one section with no length is the same as the plain calculator', () => {
+    const r = calculateSections({ ...bed, sections: [{ inRow: inch(12), betweenRows: inch(18) }] });
+    expect(r.ok && r.total).toBe(24);
+  });
+  it('4 ft at 12 in / 18 in then the rest at 6 in / 12 in', () => {
+    // Section 1: 0-48 in. Start clearance 6, end clearance 12/2 = 6 -> usable 36 -> 4 plants; width 36/18 -> 3 rows = 12.
+    // Section 2: 48-96 in. Start clearance 6/2 = 3, end 6 (bed edge) -> usable 39 -> 6 steps -> 7 plants; rows 36/12 -> 4 = 28.
+    const r = calculateSections({ ...bed, sections: [{ inRow: inch(12), betweenRows: inch(18), length: ft(4) }, { inRow: inch(6), betweenRows: inch(12) }] });
+    if (!r.ok) throw new Error('not ok');
+    expect(r.sections.map((s) => [s.layout.perRow, s.layout.rows, s.layout.total])).toEqual([[4, 3, 12], [7, 4, 28]]);
+    expect(r.total).toBe(40);
+    expect(r.unassigned).toBe(0);
+    // Gap between last plant of crop 1 (42 in) and first of crop 2 (48 + 3 = 51 in) is 9 in = half of 12 + half of 6.
+    const last1 = r.sections[0]!.start + r.sections[0]!.layout.plantAxis.last;
+    const first2 = r.sections[1]!.start + r.sections[1]!.layout.plantAxis.first;
+    expect((first2 - last1) / 0.0254).toBeCloseTo(9, 9);
+  });
+  it('lengths that add up to more than the bed are rejected; two "rest" sections are rejected', () => {
+    expect(calculateSections({ ...bed, sections: [{ inRow: 0.3, betweenRows: 0.3, length: ft(5) }, { inRow: 0.3, betweenRows: 0.3, length: ft(4) }] })).toEqual({ ok: false, problem: 'too-long', over: expect.closeTo(ft(1), 9) });
+    expect(calculateSections({ ...bed, sections: [{ inRow: 0.3, betweenRows: 0.3 }, { inRow: 0.3, betweenRows: 0.3 }] })).toEqual({ ok: false, problem: 'two-rest' });
+  });
+  it('unused length at the end is reported and the last crop keeps half its spacing from it', () => {
+    const r = calculateSections({ ...bed, sections: [{ inRow: inch(12), betweenRows: inch(18), length: ft(6) }] });
+    if (!r.ok) throw new Error('not ok');
+    expect(r.unassigned).toBeCloseTo(ft(2), 9);
+    expect(r.sections[0]!.endClear).toBeCloseTo(inch(6), 12);
+  });
+  it('rows across the width use the row spacing along the length', () => {
+    const r = calculateSections({ ...bed, direction: 'along-width', sections: [{ inRow: inch(12), betweenRows: inch(18), length: ft(4) }, { inRow: inch(6), betweenRows: inch(12) }] });
+    if (!r.ok) throw new Error('not ok');
+    // Section 1 rows: 48 - 6 - 9 = 33 / 18 -> 1 step -> 2 rows x 4 plants = 8.
+    // Section 2 rows: 48 - 6 - 6 = 36 / 12 -> 4 rows x 7 plants (36 / 6 = 6 steps) = 28.
+    expect(r.sections.map((s) => s.layout.total)).toEqual([8, 28]);
+  });
+});
+
+describe('square-foot grid', () => {
+  it('plants per 12 in square: 12 -> 1, 6 -> 4, 4 -> 9, 3 -> 16, 5 -> 4; 18 in and 24 in use 2 x 2 squares', () => {
+    expect([12, 6, 4, 3, 5].map((s) => squareFit(inch(12), inch(s)).perSquare)).toEqual([1, 4, 9, 16, 4]);
+    expect(squareFit(inch(12), inch(18)).blockSide).toBe(2);
+    expect(squareFit(inch(12), inch(24)).blockSide).toBe(2);
+    expect(squareFit(inch(12), inch(30)).blockSide).toBe(3);
+    expect(squareFit(0.3, 0.1).perSquare).toBe(9);
+  });
+  it('4 ft x 8 ft bed = 32 squares; 8 at 6 in, 4 at 18 in (one 2x2 block), rest at 3 in', () => {
+    const p = planSquares(ft(8), ft(4), inch(12), [{ spacing: inch(6), squares: 8 }, { spacing: inch(18), squares: 4 }, { spacing: inch(3) }]);
+    expect([p.cols, p.rows, p.squares]).toEqual([8, 4, 32]);
+    expect(p.crops.map((c) => [c.used, c.plants])).toEqual([[8, 32], [4, 1], [20, 320]]);
+    expect([p.free, p.plants]).toEqual([0, 353]);
+  });
+  it('partial squares are left over, too many squares is rejected, a wide crop only gets whole blocks', () => {
+    const p = planSquares(inch(100), inch(50), inch(12), [{ spacing: inch(18), squares: 6 }]);
+    expect([p.cols, p.rows, p.squares]).toEqual([8, 4, 32]);
+    expect(p.spareLength / 0.0254).toBeCloseTo(4, 9);
+    expect(p.crops[0]!.used).toBe(4);
+    expect(p.crops[0]!.plants).toBe(1);
+    expect(planSquares(ft(4), ft(4), inch(12), [{ spacing: inch(6), squares: 20 }]).problem).toBe('too-many');
+  });
+  it('metric: 120 x 240 cm at 30 cm squares = 4 x 8; 10 cm spacing = 9 per square', () => {
+    const p = planSquares(2.4, 1.2, 0.3, [{ spacing: 0.1 }]);
+    expect([p.squares, p.plants]).toEqual([32, 288]);
+  });
+});

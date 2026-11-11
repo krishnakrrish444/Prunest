@@ -7,8 +7,8 @@ Primary domain: https://prunest.com
 | Path | Tool |
 | --- | --- |
 | `/raised-bed-soil-calculator` | Soil for rectangular, circular and corner beds; up to three bag sizes and bulk compared on cost; mix split; weight from a supplied density; hand-off to plant spacing |
-| `/mulch-calculator` | Rectangles, circles, triangles and rings; net area, volume, coverage per bag; up to three bag sizes and bulk compared; same area at other depths |
-| `/plant-spacing-calculator` | Straight or staggered rows, scaled plan, seeds and packets needed from the germination rate, plant cost; hand-off to a sowing schedule |
+| `/mulch-calculator` | Rectangles, circles, triangles and rings; net area, volume, coverage per bag; up to three bag sizes and bulk compared; bulk sold by weight from a supplied density; same area at other depths |
+| `/plant-spacing-calculator` | Straight or staggered rows, or a square-foot grid; up to eight crops per bed; scaled plan; seeds and packets from the germination rate; plant cost; hand-off to a sowing schedule |
 | `/seed-starting-calculator` | Dates from up to three reference dates and seed packet offsets, succession sowings, harvest dates from days to maturity, timeline, `.ics` export |
 
 Plus `/`, `/about`, `/contact`, `/privacy`, `/terms`, a real `404`, `sitemap.xml` and `robots.txt`.
@@ -129,12 +129,12 @@ Also turn on SSL/TLS > Edge Certificates > Always Use HTTPS for both zones.
 
 ## Verification
 
-`npm run verify` runs type checks, 70 unit tests and the production build. `npm run e2e` runs the browser smoke test; GitHub Actions runs both on every push and pull request, in Chromium, Firefox and WebKit. The tests cover rectangular and circular volumes, mixed units and unit round trips, exact-fit and partial bag and bulk rounding, mulch exclusions and depth conversions, plant spacing with edge clearance and exact-fit boundaries, and date offsets, ranges, leap days, year ends and calendar export.
+`npm run verify` runs type checks, 82 unit tests and the production build. `npm run e2e` runs the browser smoke test; GitHub Actions runs both on every push and pull request, in Chromium, Firefox and WebKit. The tests cover rectangular and circular volumes, mixed units and unit round trips, exact-fit and partial bag and bulk rounding, mulch exclusions and depth conversions, plant spacing with edge clearance and exact-fit boundaries, and date offsets, ranges, leap days, year ends and calendar export.
 
 ## Known limits
 
 - Soil beds are rectangles or circles; mulch adds triangles and rings. Other shapes are built from sections.
-- Plant spacing covers one plant type per layout (straight or staggered rows); no mixed plantings.
+- Mixed beds split crops into sections along the length (rows) or by squares (grid); no interplanting within a row.
 - Up to three reference dates per seed schedule.
 - Printed diagrams are not true to scale; the labelled dimensions are authoritative.
 - No plant database, regional calendars, prices, weather or accounts, by design.

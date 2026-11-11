@@ -59,7 +59,7 @@ export const tools: ToolInfo[] = [
     title: 'Mulch Calculator — Calculate Coverage, Volume & Bags',
     description:
       'Add up garden areas, subtract what is already covered, and get the mulch volume for your chosen depth, with bag and bulk quantities compared side by side.',
-    blurb: 'Rectangles, circles, triangles and tree rings added together, with bags and bulk loads compared.',
+    blurb: 'Mulch or gravel for any mix of shapes, with bags, bulk loads and by-the-ton orders compared.',
   },
   {
     id: 'spacing',
@@ -68,7 +68,7 @@ export const tools: ToolInfo[] = [
     title: 'Plant Spacing Calculator — Plan Rows & Plant Positions',
     description:
       'Enter bed size and the spacing from your seed packet to see how many rows and plants fit, with a scaled top-down plan and printable measurements.',
-    blurb: 'Straight or staggered rows, a scaled plan, and how many seeds and packets to buy for the bed.',
+    blurb: 'Rows, staggered rows or a square-foot grid, several crops per bed, and the seeds to buy.',
   },
   {
     id: 'seed',

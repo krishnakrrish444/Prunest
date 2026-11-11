@@ -4,6 +4,8 @@ import { footprintArea, type Shape } from '../lib/geometry';
 import { calculateMulch, exclusionProblem, type MulchArea } from '../lib/mulch';
 import { fromSI, SYSTEM_OF, toSI, UNIT_LABEL, type Unit, type UnitSystem } from '../lib/units';
 import { footprintDiagram } from '../ui/diagram';
+import { planByWeight } from '../lib/purchase';
+import { LB_PER_CUFT } from '../lib/soil';
 import { bagRow, ExtraBags, purchaseTable, type ExtraBagState, type PurchaseRow } from '../ui/purchase';
 import { block, bullets, fold, headline, inputsUsed, stat, stats, steps, table } from '../ui/html';
 import {
@@ -27,10 +29,18 @@ interface MulchState {
   bag: FieldState;
   bagPrice: string;
   extraBags?: ExtraBagState[];
+  bulkBy?: BulkBy;
+  stepW?: FieldState;
+  bulkW?: FieldState;
+  density?: string;
+  densityUnit?: DensityUnit;
   step: FieldState;
   bulk: FieldState;
   cur: string;
 }
+
+type BulkBy = 'volume' | 'weight';
+type DensityUnit = 'lbcuft' | 'kgm3';
 
 interface AreaRow extends Row {
   name: HTMLInputElement;
@@ -107,6 +117,18 @@ mountTool<MulchState>('mulch', (ctx) => {
   const bagPrice = new NumField({ label: 'Price per bag', allowZero: true, optional: true });
   const step = new NumField({ label: 'Bulk sold in steps of', noun: 'bulk step', units: ['cuyd', 'cum'], unit: imp() ? 'cuyd' : 'cum', optional: true, help: 'The smallest amount the supplier adds at a time, for example 0.5 or 1.' });
   const bulk = new NumField({ label: 'Bulk price', units: ['cuyd', 'cum'], unit: imp() ? 'cuyd' : 'cum', perUnit: true, allowZero: true, optional: true });
+  const bulkBy = selectField<BulkBy>('Bulk is sold by', [['volume', 'Volume (cubic yards or metres)'], ['weight', 'Weight (tons or tonnes)']], 'Gravel, stone and some soils are sold by weight.');
+  const stepW = new NumField({ label: 'Bulk sold in steps of', noun: 'bulk step', units: ['ton', 'tonne'], unit: imp() ? 'ton' : 'tonne', optional: true, help: 'The smallest amount the supplier adds at a time, for example 0.5 or 1.' });
+  const bulkW = new NumField({ label: 'Bulk price', units: ['ton', 'tonne'], unit: imp() ? 'ton' : 'tonne', perUnit: true, allowZero: true, optional: true });
+  const densityW = new NumField({ label: 'Density of the material', noun: 'density', optional: true, help: 'From the supplier, for this exact product. Needed to turn volume into weight.' });
+  const densityUnit = selectField<DensityUnit>('Density unit', [['lbcuft', 'lb per cu ft'], ['kgm3', 'kg per m³']]);
+  const byVolume = grid(step.root, bulk.root);
+  const byWeight = h('div', {}, grid(stepW.root, bulkW.root), grid(densityW.root, densityUnit.root));
+  const syncBulk = () => {
+    byVolume.hidden = bulkBy.value !== 'volume';
+    byWeight.hidden = bulkBy.value !== 'weight';
+  };
+  bulkBy.select.addEventListener('change', syncBulk);
   const extraBags = new ExtraBags(system, ctx.refresh);
   const cur = selectField<string>('Currency symbol', [['$', '$'], ['£', '£'], ['€', '€']]);
 
@@ -115,7 +137,7 @@ mountTool<MulchState>('mulch', (ctx) => {
     h('p', { class: 'help mb-3', text: 'Split an irregular area into simple sections and add one row for each. Sections must not overlap, or the overlap is counted twice.' }),
     areas.root,
     fieldset('Depth', grid(depth.root), chips),
-    optionalGroup('Buying', 'Bags and bulk, with prices to compare', grid(bag.root, bagPrice.root), extraBags.root, grid(step.root, bulk.root), grid(cur.root)),
+    optionalGroup('Buying', 'Bags and bulk, with prices to compare', grid(bag.root, bagPrice.root), extraBags.root, grid(bulkBy.root), byVolume, byWeight, grid(cur.root)),
   );
 
   const blankArea = (): AreaState => ({ name: '', shape: 'rect', length: { v: '', u: len() }, width: { v: '', u: len() }, diameter: { v: '', u: len() }, inner: { v: '', u: len() }, exclusion: { v: '', u: imp() ? 'sqft' : 'sqm' } });
@@ -183,6 +205,11 @@ mountTool<MulchState>('mulch', (ctx) => {
       bag: bag.getState(),
       bagPrice: bagPrice.input.value,
       extraBags: extraBags.getState(),
+      bulkBy: bulkBy.value,
+      stepW: stepW.getState(),
+      bulkW: bulkW.getState(),
+      density: densityW.input.value,
+      densityUnit: densityUnit.value,
       step: step.getState(),
       bulk: bulk.getState(),
       cur: cur.value,
@@ -204,6 +231,12 @@ mountTool<MulchState>('mulch', (ctx) => {
       bag.setState(s.bag);
       bagPrice.setState({ v: s.bagPrice ?? '' });
       extraBags.setState(s.extraBags);
+      bulkBy.value = s.bulkBy ?? 'volume';
+      stepW.setState(s.stepW);
+      bulkW.setState(s.bulkW);
+      densityW.setState({ v: s.density ?? '' });
+      densityUnit.value = s.densityUnit ?? (imp() ? 'lbcuft' : 'kgm3');
+      syncBulk();
       step.setState(s.step);
       bulk.setState(s.bulk);
       cur.value = s.cur ?? ctx.currency;
@@ -212,6 +245,9 @@ mountTool<MulchState>('mulch', (ctx) => {
       system = next;
       [...areas.rows.flatMap((r) => [r.length, r.width, r.diameter, r.inner, r.exclusion]), depth, bag, step, bulk].forEach((f) => f.setSystem(next));
       extraBags.setSystem(next);
+      stepW.setSystem(next);
+      bulkW.setSystem(next);
+      if (densityW.isEmpty) densityUnit.value = next === 'imperial' ? 'lbcuft' : 'kgm3';
       drawChips();
     },
     update() {
@@ -243,8 +279,16 @@ mountTool<MulchState>('mulch', (ctx) => {
       const d = take(depth, issues, { required: true });
       const bagVolume = take(bag, issues, { required: false });
       const price = take(bagPrice, issues, { required: false });
-      const increment = take(step, issues, { required: false });
-      const bulkPrice = take(bulk, issues, { required: false });
+      const weighed = bulkBy.value === 'weight';
+      const increment = weighed ? undefined : take(step, issues, { required: false });
+      const bulkPrice = weighed ? undefined : take(bulk, issues, { required: false });
+      const stepKg = weighed ? take(stepW, issues, { required: false }) : undefined;
+      const pricePerKg = weighed ? take(bulkW, issues, { required: false }) : undefined;
+      const dens = weighed ? take(densityW, issues, { required: false }) : undefined;
+      if (weighed && (stepKg !== undefined || pricePerKg !== undefined)) {
+        if (stepW.isEmpty) issues.fail(stepW, 'Enter the step the supplier sells in, for example 0.5 or 1 ton, so the amount can be rounded.');
+        if (densityW.isEmpty) issues.fail(densityW, 'Enter the density from the supplier. Without it, volume cannot be turned into weight.');
+      }
       if (price !== undefined && bag.isEmpty) issues.fail(bag, 'Enter the bag size so the price per bag can be used.');
       const extras = extraBags.read(issues);
       if (extras.length > 0 && bag.isEmpty && price === undefined) issues.fail(bag, 'Enter the first bag size to compare it with the others.');
@@ -271,7 +315,21 @@ mountTool<MulchState>('mulch', (ctx) => {
       );
       html += `<p class="fine">This is the <strong>required volume</strong>, before rounding up to whole bags or bulk steps.</p>`;
 
-      if (r.bags || r.bulk) {
+      const densKg = dens !== undefined ? (densityUnit.value === 'lbcuft' ? dens * LB_PER_CUFT : dens) : undefined;
+      const weightPlan = stepKg !== undefined && densKg !== undefined ? planByWeight(r.volume, densKg, stepKg, pricePerKg) : undefined;
+      if (weightPlan) {
+        const wU = stepW.unit!;
+        html += block(
+          'Weight to order',
+          stats(
+            stat('Needed', fmtUnit(weightPlan.requiredWeight, wU, 2), `${fmtUnit(weightPlan.requiredWeight, imperial ? 'lb' : 'kg', 0)}`),
+            stat('Order', fmtUnit(weightPlan.purchasedWeight, wU, 2), `${plural(weightPlan.count, 'step')} of ${esc(stepW.describe())}`),
+            ...(weightPlan.cost !== undefined ? [stat('Cost', fmtMoney(weightPlan.cost, sym), `${sym}${esc(bulkW.describe())}`)] : []),
+          ) +
+            `<p class="fine">${fmtUnit(r.volume, imperial ? 'cuft' : 'cum', 3)} × ${esc(densityW.describe())} ${densityUnit.value === 'lbcuft' ? 'lb per cu ft' : 'kg per m³'} = ${fmtUnit(weightPlan.requiredWeight, imperial ? 'lb' : 'kg', 0)}, rounded up to whole steps. The order covers about ${fmtUnit(weightPlan.purchasedVolume, imperial ? 'cuyd' : 'cum', 3)}, leaving ${fmtUnit(weightPlan.surplusVolume, imperial ? 'cuft' : 'l', imperial ? 2 : 0)} spare. This uses only the density you entered; wet material weighs more.</p>`,
+        );
+      }
+      if (r.bags || r.bulk || weightPlan) {
         const cmp: PurchaseRow[] = [];
         if (r.bags) cmp.push(bagRow(r.volume, { volume: bagVolume!, price }, bag.describe(), bag.unit!, sym));
         extras.forEach((e) => cmp.push(bagRow(r.volume, e.option, e.label, e.unit, sym)));
@@ -284,6 +342,17 @@ mountTool<MulchState>('mulch', (ctx) => {
             cost: r.bulk.cost,
             unitCost: bulkPrice !== undefined ? `${sym}${esc(bulk.describe())}` : undefined,
             unit: step.unit!,
+          });
+        }
+        if (weightPlan) {
+          cmp.push({
+            name: 'Bulk by weight',
+            buy: `${plural(weightPlan.count, 'step')} of ${esc(stepW.describe())}`,
+            purchasedVolume: weightPlan.purchasedVolume,
+            surplusVolume: weightPlan.surplusVolume,
+            cost: weightPlan.cost,
+            unitCost: pricePerKg !== undefined ? `${sym}${esc(bulkW.describe())}` : undefined,
+            unit: imperial ? 'cuyd' : 'cum',
           });
         }
         html += block(
@@ -363,6 +432,9 @@ mountTool<MulchState>('mulch', (ctx) => {
       if (price !== undefined) used.push(['Price per bag', fmtMoney(price, sym)]);
       if (increment !== undefined) used.push(['Bulk step', step.describe()]);
       if (bulkPrice !== undefined) used.push(['Bulk price', `${sym}${bulk.describe()}`]);
+      if (stepKg !== undefined) used.push(['Bulk step', stepW.describe()]);
+      if (pricePerKg !== undefined) used.push(['Bulk price', `${sym}${bulkW.describe()}`]);
+      if (dens !== undefined) used.push(['Density', `${densityW.describe()} ${densityUnit.value === 'lbcuft' ? 'lb per cu ft' : 'kg per m³'}`]);
       html += fold('Inputs used', inputsUsed(used));
       html += fold(
         'Assumptions',

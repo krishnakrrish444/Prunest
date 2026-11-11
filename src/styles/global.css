@@ -169,6 +169,16 @@
   .dg-clear { fill: none; stroke: var(--color-muted); stroke-width: 1; stroke-dasharray: 5 4; }
   .dg-row { stroke: var(--color-leaf-300); stroke-width: 1; }
   .dg-plant { fill: var(--color-leaf-700); }
+  .dg-crop-1 { fill: var(--color-soil); }
+  .dg-crop-2 { fill: #8a6d1f; }
+  .dg-crop-3 { fill: var(--color-ink); }
+  .dg-divider { stroke: var(--color-ink); stroke-width: 1.5; stroke-dasharray: 6 4; }
+  .dg-grid { stroke: var(--color-soil); stroke-width: 1; }
+  .dg-sq { stroke: none; }
+  .dg-sq-0 { fill: #dfe9d9; }
+  .dg-sq-1 { fill: #ecdcc6; }
+  .dg-sq-2 { fill: #f1e6bf; }
+  .dg-sq-3 { fill: #e4e4dc; }
   .dg-wall { fill: #fff; stroke: var(--color-soil); stroke-width: 2; }
   .dg-fill { fill: #b89572; stroke: var(--color-soil); stroke-width: 2; }
   .dg-ground { stroke: var(--color-ink); stroke-width: 2; }
@@ -193,18 +203,18 @@
      shift creeps back, so update these when a form changes. */
   [data-tool="soil"] [data-form] { min-height: 1270px; }
   [data-tool="mulch"] [data-form] { min-height: 1075px; }
-  [data-tool="spacing"] [data-form] { min-height: 1335px; }
+  [data-tool="spacing"] [data-form] { min-height: 1665px; }
   [data-tool="seed"] [data-form] { min-height: 1570px; }
   @media (min-width: 640px) {
     [data-tool="soil"] [data-form] { min-height: 920px; }
     [data-tool="mulch"] [data-form] { min-height: 860px; }
-    [data-tool="spacing"] [data-form] { min-height: 1000px; }
+    [data-tool="spacing"] [data-form] { min-height: 1330px; }
     [data-tool="seed"] [data-form] { min-height: 1110px; }
   }
   @media (min-width: 1024px) {
     [data-tool="soil"] [data-form] { min-height: 960px; }
     [data-tool="mulch"] [data-form] { min-height: 955px; }
-    [data-tool="spacing"] [data-form] { min-height: 1100px; }
+    [data-tool="spacing"] [data-form] { min-height: 1470px; }
     [data-tool="seed"] [data-form] { min-height: 1210px; }
   }
 

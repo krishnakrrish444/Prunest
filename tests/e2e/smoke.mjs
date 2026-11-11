@@ -108,6 +108,21 @@ try {
   ok((await p.locator('[data-results] tbody tr').count()) === 9 && (await p.locator('.tl-ref').count()) === 2, 'seed: example builds 9 dates (8 tasks and a harvest) from two reference dates');
   await p.context().close();
 
+  // Square-foot grid and a second crop.
+  p = await open('/plant-spacing-calculator');
+  await p.check('input[value=imperial]', { force: true });
+  await p.click('[data-action=example]');
+  await p.getByRole('combobox', { name: 'Layout' }).selectOption('grid');
+  ok((await text(p, '.headline')).includes('32 plants') && (await p.locator('.dg-sq-0').count()) === 32, 'spacing grid: 8 ft x 4 ft at 12 in spacing = 32 squares, 32 plants');
+  await p.getByRole('combobox', { name: 'Layout' }).selectOption('rows');
+  await p.click('text=+ Add another crop');
+  const c2 = p.locator('[data-crops] .row-card').first();
+  await p.getByRole('textbox', { name: /^Length of bed for this crop/ }).first().fill('4');
+  await c2.getByRole('textbox', { name: /^Spacing between plants/ }).fill('6');
+  await c2.getByRole('textbox', { name: /^Spacing between rows/ }).fill('12');
+  ok((await text(p, '.headline')).includes('40 plant positions'), 'spacing mixed: two crops in one bed = 40 positions');
+  await p.context().close();
+
   const r = await fetch(B + '/no-such-page');
   ok(r.status === 404, 'routing: unknown address returns 404');
 } finally {

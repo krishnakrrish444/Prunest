@@ -122,3 +122,12 @@ describe('soil mix and weight (optional extras)', () => {
     expect(LB_PER_CUFT).toBeCloseTo(16.018463, 5);
   });
 });
+
+describe('mass units', () => {
+  it('1 US ton = 2,000 lb = 907.18474 kg; 1 tonne = 1,000 kg', async () => {
+    const { convert } = await import('../src/lib/units');
+    expect(convert(1, 'ton', 'lb')).toBeCloseTo(2000, 9);
+    expect(convert(1, 'ton', 'kg')).toBeCloseTo(907.18474, 6);
+    expect(convert(1, 'tonne', 'ton')).toBeCloseTo(1.1023113, 6);
+  });
+});
