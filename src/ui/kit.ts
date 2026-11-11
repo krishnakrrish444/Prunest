@@ -322,6 +322,22 @@ export function checkField(label: string, help?: string) {
   return { root, input };
 }
 
+/**
+ * A collapsible group for optional inputs. It opens by itself when it holds
+ * values (example, saved plan, shared link) or when a field inside has an error.
+ */
+export function optionalGroup(title: string, hint: string, ...kids: (Node | string)[]): HTMLDetailsElement {
+  return h(
+    'details',
+    { class: 'group group-optional', 'data-optional': '' },
+    h('summary', { class: 'group-summary' }, h('span', { class: 'group-legend', text: title }), h('span', { class: 'group-hint', text: hint })),
+    h('div', { class: 'group-body', role: 'group', 'aria-label': title }, ...kids),
+  );
+}
+
+const holdsValue = (d: Element): boolean =>
+  [...d.querySelectorAll('input')].some((i) => (i.type === 'checkbox' ? i.checked : i.value.trim() !== ''));
+
 export function fieldset(legend: string, ...kids: (Node | string)[]): HTMLFieldSetElement {
   return h('fieldset', { class: 'group' }, h('legend', { class: 'group-legend', text: legend }), ...kids);
 }
@@ -479,6 +495,14 @@ export function mountTool<S>(id: string, make: (ctx: ToolContext) => Tool<S>): v
   const refresh = () => {
     const ready = tool.update();
     printBtn.disabled = !ready;
+    // Never leave an error hidden inside a closed optional group.
+    form.querySelectorAll<HTMLDetailsElement>('details[data-optional]:not([open])').forEach((d) => {
+      if (d.querySelector('[aria-invalid="true"]')) d.open = true;
+    });
+  };
+  /** After loading values, open the optional groups that hold any and close the rest. */
+  const syncOptional = () => {
+    form.querySelectorAll<HTMLDetailsElement>('details[data-optional]').forEach((d) => (d.open = holdsValue(d)));
   };
   form.textContent = '';
   let lastHTML: string | null = null;
@@ -549,10 +573,12 @@ export function mountTool<S>(id: string, make: (ctx: ToolContext) => Tool<S>): v
       switch (btn.dataset.action) {
         case 'example':
           tool.setState(tool.example());
+          syncOptional();
           say('Example values loaded. Change any of them to match your garden.');
           break;
         case 'reset':
           tool.setState(tool.blank());
+          syncOptional();
           say('All fields cleared.');
           break;
         case 'print':
@@ -615,6 +641,7 @@ export function mountTool<S>(id: string, make: (ctx: ToolContext) => Tool<S>): v
     }
   }
   if (!restored && !fromLink) tool.setState(tool.blank());
+  syncOptional();
   deleteBtn.hidden = store('get', planKey) === null;
   if (restored) say('Loaded the plan you saved in this browser.');
   if (fromLink) say('Loaded the plan from the link you opened. It is not saved unless you save it.');

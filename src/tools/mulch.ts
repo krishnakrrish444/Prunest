@@ -6,7 +6,7 @@ import { fromSI, SYSTEM_OF, UNIT_LABEL, type Unit, type UnitSystem } from '../li
 import { footprintDiagram } from '../ui/diagram';
 import { block, bullets, fold, headline, inputsUsed, stat, stats, steps, table } from '../ui/html';
 import {
-  esc, fieldset, grid, h, Issues, mountTool, NumField, pendingHTML, RowList, rowShell, selectField, take, textField,
+  esc, fieldset, grid, h, Issues, mountTool, NumField, optionalGroup, pendingHTML, RowList, rowShell, selectField, take, textField,
   type FieldState, type Row, type Tool,
 } from '../ui/kit';
 
@@ -112,7 +112,7 @@ mountTool<MulchState>('mulch', (ctx) => {
     h('p', { class: 'help mb-3', text: 'Split an irregular area into simple sections and add one row for each. Sections must not overlap, or the overlap is counted twice.' }),
     areas.root,
     fieldset('Depth', grid(depth.root), chips),
-    fieldset('Buying (optional)', grid(bag.root, bagPrice.root), grid(step.root, bulk.root), grid(cur.root)),
+    optionalGroup('Buying', 'Bags and bulk, with prices to compare', grid(bag.root, bagPrice.root), grid(step.root, bulk.root), grid(cur.root)),
   );
 
   const blankArea = (): AreaState => ({ name: '', shape: 'rect', length: { v: '', u: len() }, width: { v: '', u: len() }, diameter: { v: '', u: len() }, inner: { v: '', u: len() }, exclusion: { v: '', u: imp() ? 'sqft' : 'sqm' } });

@@ -1,0 +1,21 @@
+{
+  "name": "Prunest garden calculators",
+  "short_name": "Prunest",
+  "description": "Free garden calculators for soil, mulch, plant spacing and seed starting dates.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f2e8",
+  "theme_color": "#f6f2e8",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Raised Bed Soil Calculator", "short_name": "Soil", "url": "/raised-bed-soil-calculator" },
+    { "name": "Mulch Calculator", "short_name": "Mulch", "url": "/mulch-calculator" },
+    { "name": "Plant Spacing Calculator", "short_name": "Spacing", "url": "/plant-spacing-calculator" },
+    { "name": "Seed Starting Calculator", "short_name": "Seeds", "url": "/seed-starting-calculator" }
+  ]
+}

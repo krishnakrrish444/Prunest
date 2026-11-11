@@ -11,7 +11,8 @@ export function table(caption: string, head: string[], rows: string[][], foot?: 
   const th = head.map((c, i) => `<th scope="col"${i ? ' class="num"' : ''}>${c}</th>`).join('');
   const tr = (cells: string[], tag = 'td') =>
     `<tr>${cells.map((c, i) => (i === 0 ? `<th scope="row">${c}</th>` : `<${tag} class="num">${c}</${tag}>`)).join('')}</tr>`;
-  return `<div class="table-wrap"><table class="table${text ? ' table-text' : ''}"><caption>${caption}</caption><thead><tr>${th}</tr></thead><tbody>${rows
+  // The wrapper scrolls sideways on narrow screens, so it must be reachable by keyboard.
+  return `<div class="table-wrap" role="region" aria-label="${caption}" tabindex="0"><table class="table${text ? ' table-text' : ''}"><caption>${caption}</caption><thead><tr>${th}</tr></thead><tbody>${rows
     .map((r) => tr(r))
     .join('')}</tbody>${foot ? `<tfoot>${tr(foot)}</tfoot>` : ''}</table></div>`;
 }

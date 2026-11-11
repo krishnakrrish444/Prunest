@@ -15,7 +15,7 @@ const { measurementId } = Astro.props;
   <div class="wrap flex flex-wrap items-center gap-3 py-3 text-sm">
     <p>Allow Google Analytics to measure visits? <a href="/privacy#analytics">Privacy details</a></p>
     <button type="button" class="btn btn-primary" data-analytics-allow>Allow analytics</button>
-    <button type="button" class="btn" data-analytics-decline>Decline analytics</button>
+    <button type="button" class="btn btn-secondary" data-analytics-decline>Decline analytics</button>
   </div>
 </section>
 
@@ -29,7 +29,7 @@ const { measurementId } = Astro.props;
   const measurementId = panel?.dataset.googleAnalytics;
 
   if (panel && settings && measurementId && location.origin === 'https://prunest.com') {
-    const analyticsWindow = window as AnalyticsWindow;
+    const analyticsWindow = window as unknown as AnalyticsWindow;
     const storageKey = 'prunest:analytics';
     const disableKey = `ga-disable-${measurementId}` as const;
     let started = false;

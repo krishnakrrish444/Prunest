@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
+import offline from './integrations/offline.mjs';
 
 // Static output only: no adapter, no server functions.
 // `format: 'file'` emits /mulch-calculator.html, which Cloudflare Workers
@@ -11,4 +12,5 @@ export default defineConfig({
   trailingSlash: 'never',
   build: { format: 'file' },
   vite: { plugins: [tailwindcss()] },
+  integrations: [offline()],
 });

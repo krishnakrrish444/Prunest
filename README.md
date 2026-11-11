@@ -9,7 +9,7 @@ Primary domain: https://prunest.com
 | `/raised-bed-soil-calculator` | Soil volume, bags and cost for one or more beds; optional mix split and weight from a supplied density |
 | `/mulch-calculator` | Rectangles, circles, triangles and rings; net area, volume, coverage per bag, bags vs bulk |
 | `/plant-spacing-calculator` | Straight or staggered rows, plants per row, scaled plan, optional plant cost |
-| `/seed-starting-calculator` | Dates from a reference date and seed packet offsets, succession sowings, timeline, `.ics` export |
+| `/seed-starting-calculator` | Dates from up to three reference dates and seed packet offsets, succession sowings, timeline, `.ics` export |
 
 Plus `/`, `/about`, `/contact`, `/privacy`, `/terms`, a real `404`, `sitemap.xml` and `robots.txt`.
 
@@ -29,6 +29,7 @@ npm test          # unit tests (vitest)
 npm run build     # production build into dist/
 npm run preview   # serve dist/ with wrangler dev (same routing and 404s as production)
 npm run verify    # check + test + build
+npm run e2e       # browser smoke test of dist/ (add `-- firefox` or `-- webkit`)
 npm run deploy    # build + wrangler deploy
 ```
 
@@ -44,8 +45,10 @@ src/ui/       Shared browser UI: measurement fields with unit conversion, valida
 src/tools/    One file per tool: builds the form, calls src/lib, renders results
 src/layouts/  Base (head, SEO, header, footer), ToolLayout (tool shell + print header), Page
 src/pages/    One .astro file per URL, plus robots.txt, sitemap.xml and conditional ads.txt
+integrations/ Build step that writes dist/sw.js (offline copy of the site)
 src/config/site.ts   Site identity, tool list, optional integrations
-tests/        Vitest suites with hand-worked expected values
+tests/        Vitest suites with hand-worked expected values; tests/e2e/ browser smoke test
+.github/      Checks workflow: types, unit tests, build, then Chromium, Firefox and WebKit
 ```
 
 Rules the code follows:
@@ -56,9 +59,13 @@ Rules the code follows:
 - Invalid input is rejected with an inline message. Nothing is silently replaced with a default.
 - Dates are plain calendar dates (`{y, m, d}`), so timezones and daylight saving cannot shift results.
 
+## Offline and install
+
+After one visit, the browser keeps a copy of every page, script, style and font (about 26 files), so the calculators open and work with no signal. `integrations/offline.mjs` writes `dist/sw.js` at build time; its cache name is a hash of the built files, so each deploy replaces the old copy. Pages are fetched network-first (4 s timeout) so updates arrive; hashed assets are served from the copy. Only Prunest's own files are handled; ads and analytics always go to the network. `manifest.webmanifest` lets visitors add Prunest to a home screen, with shortcuts to each calculator. Social preview images (`og-*.png`) are not cached.
+
 ## Shared tool features
 
-Every tool has: try an example, reset, imperial/metric switch, inline validation, a collapsible calculation breakdown, print layout, save on this device, and **copy link to this plan** (the plan is encoded in the URL fragment, which is never sent to the server). On phones a bar at the bottom shows the headline result while the form is being edited. Headings use Zilla Slab, self-hosted from the build (no third-party font requests).
+Every tool has: try an example, reset, imperial/metric switch, inline validation, optional inputs in collapsible sections (they open by themselves when they hold values or an error), a collapsible calculation breakdown, print layout, save on this device, and **copy link to this plan** (the plan is encoded in the URL fragment, which is never sent to the server). On phones a bar at the bottom shows the headline result while the form is being edited. Headings use Zilla Slab, self-hosted from the build (no third-party font requests).
 
 ## Configuration
 
@@ -71,6 +78,7 @@ Everything optional is **off** unless a real value is set at build time. Copy `.
 | `PUBLIC_ADSENSE_SLOT_BELOW_TOOL`, `PUBLIC_ADSENSE_SLOT_IN_CONTENT` | AdSense slot IDs for the two placements |
 | `PUBLIC_ADS_PORTAL_SCRIPT` | HTTPS script URL for the Ads Portal. Slots render as `<div data-ad-placement="below-tool">` and `<div data-ad-placement="in-content">` |
 | `PUBLIC_CF_ANALYTICS_TOKEN` | Cloudflare Web Analytics beacon; adds the analytics section to the privacy page |
+| `PUBLIC_GOOGLE_ANALYTICS_ID` | `G-…` ID. Shows an allow/decline banner on prunest.com only; Google Analytics loads only after “Allow”. Adds the matching privacy text and a footer “Analytics preferences” button |
 
 Ad slots sit below the tool and inside the supporting content only. They are never among inputs or results and are hidden in print. The privacy page is generated from the same flags, so it always matches what is enabled. If you enable AdSense for UK/EEA visitors, set up Google's consent message in the AdSense account first.
 
@@ -121,12 +129,12 @@ Also turn on SSL/TLS > Edge Certificates > Always Use HTTPS for both zones.
 
 ## Verification
 
-`npm run verify` runs type checks, 62 unit tests and the production build. The tests cover rectangular and circular volumes, mixed units and unit round trips, exact-fit and partial bag and bulk rounding, mulch exclusions and depth conversions, plant spacing with edge clearance and exact-fit boundaries, and date offsets, ranges, leap days, year ends and calendar export.
+`npm run verify` runs type checks, 62 unit tests and the production build. `npm run e2e` runs the browser smoke test; GitHub Actions runs both on every push and pull request, in Chromium, Firefox and WebKit. The tests cover rectangular and circular volumes, mixed units and unit round trips, exact-fit and partial bag and bulk rounding, mulch exclusions and depth conversions, plant spacing with edge clearance and exact-fit boundaries, and date offsets, ranges, leap days, year ends and calendar export.
 
 ## Known limits
 
-- Rectangles and circles only. Other shapes are built from sections.
+- Soil beds are rectangles or circles; mulch adds triangles and rings. Other shapes are built from sections.
 - Plant spacing covers one plant type per layout (straight or staggered rows); no mixed plantings.
-- One reference date per seed schedule.
+- Up to three reference dates per seed schedule.
 - Printed diagrams are not true to scale; the labelled dimensions are authoritative.
 - No plant database, regional calendars, prices, weather or accounts, by design.

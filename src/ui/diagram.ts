@@ -191,8 +191,8 @@ export interface TimelineRow {
 }
 
 /** Calendar strip: one bar or marker per task, with month divisions and the reference date. */
-export function timelineDiagram(rows: TimelineRow[], reference: CalDate, refLabel: string, monthName: (c: CalDate) => string, alt: string): string {
-  const all = [reference, ...rows.flatMap((r) => [r.start, r.end])];
+export function timelineDiagram(rows: TimelineRow[], refs: { date: CalDate; label: string }[], monthName: (c: CalDate) => string, alt: string): string {
+  const all = [...refs.map((r) => r.date), ...rows.flatMap((r) => [r.start, r.end])];
   const lo = all.reduce((a, b) => (compareDates(a, b) <= 0 ? a : b));
   const hi = all.reduce((a, b) => (compareDates(a, b) >= 0 ? a : b));
   const first = dayNumber({ y: lo.y, m: lo.m, d: 1 });
@@ -203,7 +203,8 @@ export function timelineDiagram(rows: TimelineRow[], reference: CalDate, refLabe
   const plotW = W - labelW - 10;
   const rowH = 26;
   const top = 28;
-  const H = top + rows.length * rowH + 30;
+  const plotBottom = top + rows.length * rowH + 4;
+  const H = plotBottom + 8 + refs.length * 16;
   const x = (c: CalDate | number) => labelW + ((typeof c === 'number' ? c : dayNumber(c)) - first) / (last - first) * plotW;
   let grid = '';
   let cur = { y: lo.y, m: lo.m, d: 1 };
@@ -212,7 +213,7 @@ export function timelineDiagram(rows: TimelineRow[], reference: CalDate, refLabe
   while (dayNumber(cur) < last) {
     const next = cur.m === 12 ? { y: cur.y + 1, m: 1, d: 1 } : { y: cur.y, m: cur.m + 1, d: 1 };
     const cx = x(cur);
-    grid += `<line class="tl-grid" x1="${cx.toFixed(1)}" y1="${top - 6}" x2="${cx.toFixed(1)}" y2="${H - 26}"/>`;
+    grid += `<line class="tl-grid" x1="${cx.toFixed(1)}" y1="${top - 6}" x2="${cx.toFixed(1)}" y2="${plotBottom}"/>`;
     if (months <= 12 || i % Math.ceil(months / 12) === 0) grid += `<text class="dg-text dg-small" x="${(cx + 3).toFixed(1)}" y="${top - 12}">${esc(monthName(cur))}</text>`;
     cur = next;
     i++;
@@ -227,10 +228,17 @@ export function timelineDiagram(rows: TimelineRow[], reference: CalDate, refLabe
         <rect class="tl-bar tl-${r.kind}" x="${a.toFixed(1)}" y="${y + 4}" width="${Math.max(b - a, 5).toFixed(1)}" height="14" rx="3"/>`;
     })
     .join('');
-  const rx = x(reference);
+  const marks = refs
+    .map((r, k) => {
+      const rx = x(r.date);
+      const ly = plotBottom + 14 + k * 16;
+      const anchor = rx > labelW + plotW * 0.6 ? 'end' : 'start';
+      const tx = anchor === 'end' ? rx - 4 : rx + 4;
+      return `<line class="tl-ref" x1="${rx.toFixed(1)}" y1="${top - 6}" x2="${rx.toFixed(1)}" y2="${ly - 10}"/>
+        <text class="dg-text dg-small" x="${tx.toFixed(1)}" y="${ly}" text-anchor="${anchor}">${esc(r.label)}</text>`;
+    })
+    .join('');
   return `<svg class="diagram" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(alt)}" preserveAspectRatio="xMidYMid meet">
-    ${grid}${bars}
-    <line class="tl-ref" x1="${rx.toFixed(1)}" y1="${top - 6}" x2="${rx.toFixed(1)}" y2="${H - 24}"/>
-    <text class="dg-text dg-small" x="${clamp(rx, labelW + 40, W - 60).toFixed(1)}" y="${H - 8}" text-anchor="middle">${esc(refLabel)}</text>
+    ${grid}${bars}${marks}
   </svg>`;
 }

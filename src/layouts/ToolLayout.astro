@@ -25,7 +25,7 @@ const jsonLd = {
   publisher: { '@type': 'Organization', name: site.name, url: site.url },
 };
 ---
-<Base title={info.title} description={info.description} path={info.path} jsonLd={jsonLd}>
+<Base title={info.title} description={info.description} path={info.path} jsonLd={jsonLd} image={`/og-${tool}.png`}>
   <div class="wrap pt-6 pb-16 sm:pt-8 lg:pb-0" data-tool={tool}>
     <div class="print-only mb-4 border-b border-line pb-2">
       <p class="display text-xl font-bold">Prunest</p>

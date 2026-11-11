@@ -5,7 +5,7 @@ import { fromSI, SYSTEM_OF, UNIT_LABEL, type Unit, type UnitSystem } from '../li
 import { footprintDiagram, shareBar } from '../ui/diagram';
 import { block, bullets, check, fold, headline, inputsUsed, stat, stats, steps, table } from '../ui/html';
 import {
-  esc, fieldset, grid, h, Issues, mountTool, NumField, pendingHTML, RowList, rowShell, selectField, take, textField,
+  esc, fieldset, grid, h, Issues, mountTool, NumField, optionalGroup, pendingHTML, RowList, rowShell, selectField, take, textField,
   type FieldState, type Row, type Tool,
 } from '../ui/kit';
 
@@ -110,13 +110,14 @@ mountTool<SoilState>('soil', (ctx) => {
     h('h2', { class: 'form-title', text: 'Your beds' }),
     beds.root,
     fieldset('Allowance', grid(allowance.root)),
-    fieldset('Buying (optional)', grid(bag.root, bagPrice.root), grid(bulk.root, cur.root)),
-    fieldset(
-      'Soil mix (optional)',
+    optionalGroup('Buying', 'Bag size and prices, for bag counts and cost', grid(bag.root, bagPrice.root), grid(bulk.root, cur.root)),
+    optionalGroup(
+      'Soil mix',
+      'Split the total between your own ingredients',
       h('p', { class: 'help', text: 'Blending your own? Enter your recipe to split the total between ingredients. Prunest does not suggest a recipe.' }),
       ...mixRows.map((m) => grid(m.name.root, m.parts.root)),
     ),
-    fieldset('Weight (optional)', grid(density.root, densityUnit.root)),
+    optionalGroup('Weight', 'Only from a density your supplier gives', grid(density.root, densityUnit.root)),
   );
 
   const allFields = () => [...beds.rows.flatMap((r) => [r.length, r.width, r.diameter, r.depth, r.height]), bag, bulk];

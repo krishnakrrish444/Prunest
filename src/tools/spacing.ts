@@ -4,7 +4,7 @@ import { axisPositions, calculateSpacing, equilateralRowSpacing, otherDirection,
 import { fromSI, UNIT_LABEL, type Unit, type UnitSystem } from '../lib/units';
 import { MAX_DRAWN_PLANTS, spacingDiagram } from '../ui/diagram';
 import { block, bullets, fold, headline, inputsUsed, stat, stats, steps, table } from '../ui/html';
-import { checkField, esc, fieldset, grid, h, Issues, mountTool, NumField, pendingHTML, selectField, take, type FieldState, type Tool } from '../ui/kit';
+import { checkField, esc, fieldset, grid, h, optionalGroup, Issues, mountTool, NumField, pendingHTML, selectField, take, type FieldState, type Tool } from '../ui/kit';
 
 interface SpacingState {
   length: FieldState;
@@ -54,7 +54,7 @@ mountTool<SpacingState>('spacing', (ctx) => {
     fieldset('Bed', grid(length.root, width.root)),
     fieldset('Spacing', grid(inRow.root, betweenRows.root), grid(clearance.root, direction.root), centre),
     fieldset('Pattern', stagger.root, evenWrap),
-    fieldset('Cost (optional)', grid(price.root)),
+    optionalGroup('Cost', 'Price per plant, to cost a full bed', grid(price.root)),
   );
   const syncStagger = () => (evenWrap.hidden = !stagger.input.checked);
   stagger.input.addEventListener('change', syncStagger);
@@ -216,7 +216,7 @@ mountTool<SpacingState>('spacing', (ctx) => {
         'Measurements for marking out',
         table(
           'Where to mark rows and plants',
-          ['', 'First centre', 'Then every', 'Last centre', 'Gap after last'],
+          ['Marks', 'First centre', 'Then every', 'Last centre', 'Gap after last'],
           [
             axisRow(`Rows (${fmt(lay.rows, 0)}), measured across the ${rowDim}`, lay.rowAxis, qu),
             axisRow(`Plants (${fmt(lay.perRow, 0)} per row${off ? ', rows 1, 3, 5…' : ''}), measured along the ${plantDim}`, lay.plantAxis, pu),

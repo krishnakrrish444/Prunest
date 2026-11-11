@@ -67,7 +67,17 @@
   .field-error { @apply mt-1 flex items-start gap-2 text-sm font-semibold text-bad; }
   .error-mark { @apply mr-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-current text-xs font-bold; }
   .group { @apply mt-5 rounded-xl border border-line p-4; }
-  .group-legend { @apply px-1 text-base font-semibold; }
+.group-legend { @apply px-1 text-base font-semibold; }
+  .group-optional { @apply p-0; }
+  .group-summary { @apply flex min-h-14 cursor-pointer list-none flex-col justify-center rounded-xl px-4 py-2 pr-12; position: relative; }
+  .group-summary::-webkit-details-marker { display: none; }
+  .group-summary::before, .group-summary::after { content: ""; @apply absolute top-1/2 right-4 h-0.5 w-4 -translate-y-1/2 bg-ink; }
+  .group-summary::after { transform: translateY(-50%) rotate(90deg); transition: transform 0.15s ease; }
+  .group-optional[open] > .group-summary::after { transform: translateY(-50%) rotate(0deg); }
+  .group-summary:hover { @apply bg-leaf-50; }
+  .group-summary .group-legend { @apply px-0; }
+  .group-hint { @apply text-sm text-muted; }
+  .group-body { @apply px-4 pb-4; }
   .rows { @apply mb-3 flex flex-col gap-3; }
   .row-card { @apply rounded-xl border border-line bg-white/60 p-4; }
   .row-head { @apply flex items-center justify-between gap-2; }
@@ -93,7 +103,8 @@
   .muted { @apply text-muted; }
   .result-block { @apply mt-6 border-t border-line pt-4; }
   .result-block h3 { @apply mb-2 text-lg font-semibold; }
-  .table-wrap { @apply overflow-x-auto; }
+  .table-wrap { @apply overflow-x-auto rounded-sm; }
+  .table-wrap:focus-visible { outline-offset: 4px; }
   .table { @apply w-full border-collapse text-sm; }
   .table caption { @apply sr-only; }
   .table th, .table td { @apply border-b border-line px-2 py-2 text-left align-top; }
@@ -168,12 +179,33 @@
   .prose table { @apply mb-4 w-full border-collapse text-sm; }
   .prose th, .prose td { @apply border-b border-line px-2 py-1.5 text-left; }
 
+  /* The forms are built by script after the page loads. Reserving each blank
+     form's height stops the results card jumping down when it appears.
+     Measured at 390, 768 and 1280 px wide; the browser checks fail if layout
+     shift creeps back, so update these when a form changes. */
+  [data-tool="soil"] [data-form] { min-height: 1270px; }
+  [data-tool="mulch"] [data-form] { min-height: 1075px; }
+  [data-tool="spacing"] [data-form] { min-height: 1150px; }
+  [data-tool="seed"] [data-form] { min-height: 1390px; }
+  @media (min-width: 640px) {
+    [data-tool="soil"] [data-form] { min-height: 920px; }
+    [data-tool="mulch"] [data-form] { min-height: 860px; }
+    [data-tool="spacing"] [data-form] { min-height: 840px; }
+    [data-tool="seed"] [data-form] { min-height: 965px; }
+  }
+  @media (min-width: 1024px) {
+    [data-tool="soil"] [data-form] { min-height: 960px; }
+    [data-tool="mulch"] [data-form] { min-height: 955px; }
+    [data-tool="spacing"] [data-form] { min-height: 940px; }
+    [data-tool="seed"] [data-form] { min-height: 1045px; }
+  }
+
   .ad-slot { @apply my-8 rounded-lg border border-dashed border-line p-3 text-center; }
   .ad-label { @apply mb-2 text-xs text-muted; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fold-mark::after { transition: none; }
+  .fold-mark::after, .group-summary::after { transition: none; }
 }
 
 @media print {
